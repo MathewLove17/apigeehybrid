@@ -1,0 +1,64 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: virtualhost-cert-test
+templates:
+- cert.yaml
+release:
+  name: test-release
+
+tests:
+- it: cert secret should not be empty
+  set:
+    envgroup: test-egroup
+  values:
+  - test-values.yaml
+  asserts:
+  - containsDocument:
+      kind: Secret
+      apiVersion: v1
+      metadata:
+        name: unittest-test-egroup
+        namespace: apigee
+- it: cert should be empty when wrong env group is given
+  set:
+    envgroup: wrong-egroup
+  values:
+    - test-values.yaml
+  asserts:
+  - hasDocuments:
+      count: 0
+- it: cert should be empty when sslSecret is provided
+  set:
+    envgroup: test-egroup
+    virtualhosts:
+    - name: test-egroup
+      sslSecret: ssl-secret-name
+  values:
+  - test-values.yaml
+  asserts:
+  - hasDocuments:
+      count: 0
+- it: template should fail if file not found
+  values:
+    - test-values.yaml
+  set:
+    envgroup: test-egroup
+    virtualhosts:
+      - name: test-egroup
+        sslCertPath: "missing-file.txt"
+        sslKeyPath: "test-file.txt"
+  asserts:
+    - failedTemplate:
+        errorMessage: "'missing-file.txt' is either an empty file or unreachable"
+- it: template should fail if file is empty
+  values:
+    - test-values.yaml
+  set:
+    envgroup: test-egroup
+    virtualhosts:
+      - name: test-egroup
+        sslCertPath: "test-file.txt"
+        sslKeyPath: "test-empty-file.txt"
+  asserts:
+    - failedTemplate:
+        errorMessage: "'test-empty-file.txt' is either an empty file or unreachable"

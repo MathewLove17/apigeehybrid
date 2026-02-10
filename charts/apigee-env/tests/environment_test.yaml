@@ -1,0 +1,1319 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: environment-test
+templates:
+- environment.yaml
+release:
+  name: test-release
+
+tests:
+- it: environment with undefined env in override
+  values:
+    - test-values.yaml
+  set:
+    env: wrong-foo
+  asserts:
+  - failedTemplate:
+      errorMessage: "Environment 'wrong-foo' not found in the provided environments. Are you targeting the correct environment (--set env=wrong-foo)? Does the target environment exist in the overrides?"
+- it: environment with new data pipeline enabled
+  values:
+    - new-pipeline-values.yaml
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: ApigeeEnvironment
+  - isAPIVersion:
+      of: apigee.cloud.google.com/v1alpha2
+  - equal:
+      path: metadata.name
+      value: bar-foo-5a25bbe
+  - isNull:
+      path: spec.imagePullSecrets
+  - equal:
+      path: spec.name
+      value: foo
+  - equal:
+      path: spec.organizationRef
+      value: bar-fcde2b2
+  ## config
+  - equal:
+      path: spec.config.analyticsTracePubSubEndpoint
+      value: us-west1-pubsub.googleapis.com
+  - equal:
+      path: spec.config.tracePubSubEnabled
+      value: true
+  - equal:
+      path: spec.config.traceDataflowDisabled
+      value: true
+  - equal:
+      path: spec.config.analyticsPubSubEnabled
+      value: true
+  - equal:
+      path: spec.config.analyticsDataflowDisabled
+      value: true
+- it: environment with custom resources with env override
+  values:
+    - test-values-override-resources.yaml
+  set:
+    env: "foo"
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: ApigeeEnvironment
+  - isAPIVersion:
+      of: apigee.cloud.google.com/v1alpha2
+  - isSubset:
+      path: spec.components.runtime.containers[?(@.name == "apigee-runtime")]
+      content:
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 1000Mi
+          limits:
+            cpu: 6000m
+            memory: 6000Mi
+  - isNotNull:
+      path: spec.components.runtime.configOverride
+  - isSubset:
+      path: spec.components.runtime.configOverride
+      content:
+        bin_setenv_max_mem: 4096m
+        conf_http_HTTPClient.block.linklocal.connections: "true"
+        conf_http_HTTPClient.block.sitelocal.connections: "false"
+        conf_metrics_server.metrics.latency.histogram.buckets.milliseconds: EXPONENTIAL,1,1.78435658,20
+- it: environment with custom resources without env override
+  values:
+    - test-values-override-resources.yaml
+  set:
+    env: "bar"
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: ApigeeEnvironment
+  - isAPIVersion:
+      of: apigee.cloud.google.com/v1alpha2
+  - isSubset:
+      path: spec.components.runtime.containers[?(@.name == "apigee-runtime")]
+      content:
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 4000m
+            memory: 6Gi
+  - isNotNull:
+      path: spec.components.runtime.configOverride
+  - isSubset:
+      path: spec.components.runtime.configOverride
+      content:
+        conf_http_HTTPClient.block.linklocal.connections: "false"
+        conf_http_HTTPClient.block.sitelocal.connections: "false"
+        conf_metrics_server.metrics.latency.histogram.buckets.milliseconds: EXPONENTIAL,1,1.78435658,20
+- it: httpProxy useForRuntimeManagement not enabled
+  values:
+    - test-managementplane-forwardproxy.yaml
+  set:
+    env: "foo"
+    httpProxy:
+      useForRuntimeManagement: false
+  asserts:
+  - isNotNull:
+      path: spec.components.runtime.configOverride
+  - isSubset:
+      path: spec.components.runtime.configOverride
+      content:
+        conf/http.properties+HTTPClient.proxy.host: 10.156.15.220
+        conf/http.properties+HTTPClient.proxy.password: secret123
+        conf/http.properties+HTTPClient.proxy.port: "3128"
+        conf/http.properties+HTTPClient.proxy.type: HTTPS
+        conf/http.properties+HTTPClient.proxy.user: test
+        conf_http_HTTPClient.block.linklocal.connections: "false"
+        conf_http_HTTPClient.block.sitelocal.connections: "false"
+        conf_http_HTTPClient.use.proxy: "true"
+        conf_metrics_server.metrics.latency.histogram.buckets.milliseconds: EXPONENTIAL,1,1.78435658,20
+- it: httpProxy overrides
+  values:
+    - test-managementplane-forwardproxy.yaml
+  set:
+    env: "foo"
+  asserts:
+  - isNotNull:
+      path: spec.components.runtime.configOverride
+  - isSubset:
+      path: spec.components.runtime.configOverride
+      content:
+        conf/http.properties+HTTPClient.managementplane.proxy.host: 10.156.15.118
+        conf/http.properties+HTTPClient.managementplane.proxy.password: feferson
+        conf/http.properties+HTTPClient.managementplane.proxy.port: "3128"
+        conf/http.properties+HTTPClient.managementplane.proxy.type: HTTP
+        conf/http.properties+HTTPClient.managementplane.proxy.user: fefe
+        conf/http.properties+HTTPClient.proxy.host: 10.156.15.220
+        conf/http.properties+HTTPClient.proxy.password: secret123
+        conf/http.properties+HTTPClient.proxy.port: "3128"
+        conf/http.properties+HTTPClient.proxy.type: HTTPS
+        conf/http.properties+HTTPClient.proxy.user: test
+        conf_http_HTTPClient.block.linklocal.connections: "false"
+        conf_http_HTTPClient.block.sitelocal.connections: "false"
+        conf_http_HTTPClient.managementplane.use.proxy: "true"
+        conf_http_HTTPClient.use.proxy: "true"
+        conf_metrics_server.metrics.latency.histogram.buckets.milliseconds: EXPONENTIAL,1,1.78435658,20
+- it: environment when http forward proxy is enabled with username and password
+  values:
+    - test-values.yaml
+  set:
+    httpProxy:
+      host: 10.156.15.118
+      port: 2345
+      username: fefe
+      password: feferson
+      useForRuntimeManagement: true
+  asserts:
+  - isNotNull:
+      path: spec.components.runtime.configOverride
+  - isSubset:
+      path: spec.components.runtime.configOverride
+      content:
+        conf/http.properties+HTTPClient.managementplane.proxy.host: 10.156.15.118
+        conf/http.properties+HTTPClient.managementplane.proxy.password: feferson
+        conf/http.properties+HTTPClient.managementplane.proxy.port: "2345"
+        conf/http.properties+HTTPClient.managementplane.proxy.type: HTTP
+        conf/http.properties+HTTPClient.managementplane.proxy.user: fefe
+        conf_http_HTTPClient.managementplane.use.proxy: "true"
+- it: environment with new data pipeline enabled for debug session
+  values:
+    - new-pipeline-debug-session-values.yaml
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: ApigeeEnvironment
+  - isAPIVersion:
+      of: apigee.cloud.google.com/v1alpha2
+  - equal:
+      path: metadata.name
+      value: bar-foo-5a25bbe
+  - isNull:
+      path: spec.imagePullSecrets
+  - equal:
+      path: spec.name
+      value: foo
+  - equal:
+      path: spec.organizationRef
+      value: bar-fcde2b2
+  ## config
+  - equal:
+      path: spec.config.analyticsTracePubSubEndpoint
+      value: us-west1-pubsub.googleapis.com
+  - equal:
+      path: spec.config.tracePubSubEnabled
+      value: true
+  - equal:
+      path: spec.config.traceDataflowDisabled
+      value: true
+  - equal:
+      path: spec.config.analyticsPubSubEnabled
+      value: true
+  - equal:
+      path: spec.config.analyticsDataflowDisabled
+      value: true
+
+- it: environment with all defaults
+  values:
+    - test-values.yaml
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: ApigeeEnvironment
+  - isAPIVersion:
+      of: apigee.cloud.google.com/v1alpha2
+  - equal:
+      path: metadata.name
+      value: bar-foo-5a25bbe
+  - isNull:
+      path: spec.imagePullSecrets
+  - equal:
+      path: spec.name
+      value: foo
+  - equal:
+      path: spec.organizationRef
+      value: bar-fcde2b2
+  ## config
+  - equal:
+      path: spec.config.analyticsTracePubSubEndpoint
+      value: pubsub.googleapis.com
+  ## synchronizer
+  - isNotNull:
+      path: spec.components.synchronizer
+  - isSubset:
+      path: spec.components.synchronizer
+      content:
+        securityContext:
+          runAsNonRoot: true
+          privileged: false
+          runAsUser: 999
+          runAsGroup: 998
+  - equal:
+      path: spec.components.synchronizer.appServiceAccountSecretName
+      value: apigee-synchronizer-bar-foo-5a25bbe-svc-account
+  - isSubset:
+      path: spec.components.synchronizer
+      content:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: "cloud.google.com/gke-nodepool"
+                operator: In
+                values:
+                - "apigee-runtime"
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: "cloud.google.com/gke-nodepool"
+                operator: In
+                values:
+                - "apigee-runtime"
+  - isNull:
+      path: spec.components.synchronizer.tolerations
+  - isNotNull:
+      path: spec.components.synchronizer.annotations
+  - isNotEmpty:
+      path: spec.components.synchronizer.version
+  - equal:
+      path: spec.components.synchronizer.autoScaler.minReplicas
+      value: 1
+  - equal:
+      path: spec.components.synchronizer.autoScaler.maxReplicas
+      value: 4
+  - equal:
+      path: spec.components.synchronizer.autoScaler.metrics[?(@.type == "Resource")].resource.target.averageUtilization
+      value: 75
+  - isNull:
+      path: spec.components.synchronizer.properties
+  - isNotNull:
+      path: spec.components.synchronizer.initContainers[?(@.name == "apigee-cassandra-schema-readiness")]
+  - equal:
+      path: spec.components.synchronizer.initContainers[?(@.name == "apigee-cassandra-schema-readiness")].imagePullPolicy
+      value: IfNotPresent
+  - isNotNull:
+      path: spec.components.synchronizer.containers[?(@.name == "apigee-synchronizer")]
+  - equal:
+      path: spec.components.synchronizer.containers[?(@.name == "apigee-synchronizer")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.components.synchronizer.containers[?(@.name == "apigee-synchronizer")]
+      content:
+        livenessProbe:
+          failureThreshold: 12
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          timeoutSeconds: 1
+          httpGet:
+            path: /v1/probes/live
+            port: 8843
+            scheme: HTTPS
+  - isSubset:
+      path: spec.components.synchronizer.containers[?(@.name == "apigee-synchronizer")]
+      content:
+        readinessProbe:
+          failureThreshold: 2
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 1
+          httpGet:
+            path: /v1/probes/ready
+            port: 8843
+            scheme: HTTPS
+  - isSubset:
+      path: spec.components.synchronizer.containers[?(@.name == "apigee-synchronizer")]
+      content:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 512Mi
+            ephemeral-storage: 2Gi
+          limits:
+            cpu: 2000m
+            memory: 5Gi
+            ephemeral-storage: 10Gi
+  ## udca
+  - isNotNull:
+      path: spec.components.udca
+  - isSubset:
+      path: spec.components.udca
+      content:
+        securityContext:
+          runAsNonRoot: true
+          privileged: false
+          runAsUser: 999
+          runAsGroup: 998
+  - equal:
+      path: spec.components.udca.appServiceAccountSecretName
+      value: apigee-udca-bar-foo-5a25bbe-svc-account
+  - isSubset:
+      path: spec.components.udca
+      content:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: "cloud.google.com/gke-nodepool"
+                operator: In
+                values:
+                - "apigee-runtime"
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: "cloud.google.com/gke-nodepool"
+                operator: In
+                values:
+                - "apigee-runtime"
+  - isNull:
+      path: spec.components.udca.tolerations
+  - isNotNull:
+      path: spec.components.udca.annotations
+  - isNotEmpty:
+      path: spec.components.udca.version
+  - equal:
+      path: spec.components.udca.autoScaler.minReplicas
+      value: 1
+  - equal:
+      path: spec.components.udca.autoScaler.maxReplicas
+      value: 4
+  - equal:
+      path: spec.components.udca.autoScaler.metrics[?(@.type == "Resource")].resource.target.averageUtilization
+      value: 75
+  - isNotNull:
+      path: spec.components.udca.initContainers[?(@.name == "apigee-tls-readiness")]
+  - equal:
+      path: spec.components.udca.initContainers[?(@.name == "apigee-tls-readiness")].imagePullPolicy
+      value: IfNotPresent
+  - isNotNull:
+      path: spec.components.udca.containers[?(@.name == "apigee-udca")]
+  - equal:
+      path: spec.components.udca.containers[?(@.name == "apigee-udca")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.components.udca.containers[?(@.name == "apigee-udca")]
+      content:
+        livenessProbe:
+          failureThreshold: 2
+          httpGet:
+            path: /v1/probes/live
+            port: 7070
+            scheme: HTTPS
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 1
+  - isNull:
+      path: spec.components.udca.containers[?(@.name == "apigee-udca")].readinessProbe
+  - isSubset:
+      path: spec.components.udca.containers[?(@.name == "apigee-udca")]
+      content:
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+  - isNotNull:
+      path: spec.components.udca.containers[?(@.name == "apigee-fluentd")]
+  - equal:
+      path: spec.components.udca.containers[?(@.name == "apigee-fluentd")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.components.udca.containers[?(@.name == "apigee-fluentd")]
+      content:
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 500Mi
+          requests:
+            cpu: 500m
+            memory: 250Mi
+  ## runtime
+  - isNotNull:
+      path: spec.components.runtime
+  - isNull:
+      path: spec.components.runtime.securityContext
+  - equal:
+      path: spec.components.runtime.appServiceAccountSecretName
+      value: apigee-runtime-bar-foo-5a25bbe-svc-account
+  - isSubset:
+      path: spec.components.runtime
+      content:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: "cloud.google.com/gke-nodepool"
+                operator: In
+                values:
+                - "apigee-runtime"
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: "cloud.google.com/gke-nodepool"
+                operator: In
+                values:
+                - "apigee-runtime"
+  - isNull:
+      path: spec.components.runtime.tolerations
+  - isNotNull:
+      path: spec.components.runtime.annotations
+  - isNotEmpty:
+      path: spec.components.runtime.version
+  - equal:
+      path: spec.components.runtime.autoScaler.minReplicas
+      value: 1
+  - equal:
+      path: spec.components.runtime.autoScaler.maxReplicas
+      value: 4
+  - isSubset:
+      path: spec.components.runtime.autoScaler.behavior
+      content:
+        scaleDown:
+          policies:
+          - periodSeconds: 60
+            type: Percent
+            value: 20
+          - periodSeconds: 60
+            type: Pods
+            value: 2
+          selectPolicy: Min
+          stabilizationWindowSeconds: 120
+        scaleUp:
+          policies:
+          - periodSeconds: 60
+            type: Percent
+            value: 20
+          - periodSeconds: 60
+            type: Pods
+            value: 4
+          selectPolicy: Max
+          stabilizationWindowSeconds: 30
+  - isSubset:
+      path: spec.components.runtime.autoScaler.metrics[0]
+      content:
+        type: Pods
+        pods:
+          metric:
+            name: server_main_task_wait_time
+          target:
+            averageValue: 400M
+            type: AverageValue
+  - isSubset:
+      path: spec.components.runtime.autoScaler.metrics[1]
+      content:
+        type: Pods
+        pods:
+          metric:
+            name: server_nio_task_wait_time
+          target:
+            averageValue: 400M
+            type: AverageValue
+  - isSubset:
+      path: spec.components.runtime.autoScaler.metrics[2]
+      content:
+        type: Resource
+        resource:
+          name: cpu
+          target:
+            averageUtilization: 75
+            type: Utilization
+  - equal:
+      path: spec.components.runtime.autoScaler.metrics[?(@.type == "Resource")].resource.target.averageUtilization
+      value: 75
+  - isNotNull:
+      path: spec.components.runtime.initContainers[?(@.name == "apigee-cassandra-schema-readiness")]
+  - equal:
+      path: spec.components.runtime.initContainers[?(@.name == "apigee-cassandra-schema-readiness")].imagePullPolicy
+      value: IfNotPresent
+  - isNotNull:
+      path: spec.components.runtime.initContainers[?(@.name == "apigee-redis-envoy-readiness")]
+  - equal:
+      path: spec.components.runtime.initContainers[?(@.name == "apigee-redis-envoy-readiness")].imagePullPolicy
+      value: IfNotPresent
+  - isNotNull:
+      path: spec.components.runtime.containers[?(@.name == "apigee-runtime")]
+  - equal:
+      path: spec.components.runtime.containers[?(@.name == "apigee-runtime")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.components.runtime.containers[?(@.name == "apigee-runtime")]
+      content:
+        livenessProbe:
+          failureThreshold: 12
+          httpGet:
+            path: /v1/probes/live
+            port: 8843
+            scheme: HTTPS
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          timeoutSeconds: 5
+  - isSubset:
+      path: spec.components.runtime.containers[?(@.name == "apigee-runtime")]
+      content:
+        readinessProbe:
+          httpGet:
+            path: /v1/probes/ready
+            port: 8843
+            scheme: HTTPS
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 1
+          failureThreshold: 2
+  - isSubset:
+      path: spec.components.runtime.containers[?(@.name == "apigee-runtime")]
+      content:
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 4000m
+            memory: 6Gi
+  - equal:
+      path: spec.components.runtime.containers[?(@.name == "apigee-runtime")].env[?(@.name == "DYNAMIC_TARGET_METRICS_AGG_ENABLED")]
+      value:
+        name: DYNAMIC_TARGET_METRICS_AGG_ENABLED
+        value: "true"
+- it: environment when image hub is provided
+  values:
+    - test-values.yaml
+  set:
+    hub: unittest-gcr.img.com
+  asserts:
+  - matchRegex:
+      path: spec.components.synchronizer.initContainers[?(@.name == "apigee-cassandra-schema-readiness")].image
+      pattern: ^unittest-gcr.img.com/apigee-mart-server:?
+  - matchRegex:
+      path: spec.components.synchronizer.containers[?(@.name == "apigee-synchronizer")].image
+      pattern: ^unittest-gcr.img.com/apigee-synchronizer:?
+  - matchRegex:
+      path: spec.components.udca.initContainers[?(@.name == "apigee-tls-readiness")].image
+      pattern: ^unittest-gcr.img.com/apigee-udca:?
+  - matchRegex:
+      path: spec.components.udca.containers[?(@.name == "apigee-udca")].image
+      pattern: ^unittest-gcr.img.com/apigee-udca:?
+  - matchRegex:
+      path: spec.components.udca.containers[?(@.name == "apigee-fluentd")].image
+      pattern: ^unittest-gcr.img.com/apigee-stackdriver-logging-agent:?
+  - matchRegex:
+      path: spec.components.runtime.initContainers[?(@.name == "apigee-cassandra-schema-readiness")].image
+      pattern: ^unittest-gcr.img.com/apigee-mart-server:?
+  - matchRegex:
+      path: spec.components.runtime.initContainers[?(@.name == "apigee-redis-envoy-readiness")].image
+      pattern: ^unittest-gcr.img.com/apigee-runtime:?
+  - matchRegex:
+      path: spec.components.runtime.containers[?(@.name == "apigee-runtime")].image
+      pattern: ^unittest-gcr.img.com/apigee-runtime:?
+- it: environment when http forward proxy is enabled
+  values:
+    - test-values.yaml
+  set:
+    httpProxy:
+      host: foo-http-forward-proxy.com
+      port: 2345
+  asserts:
+  - isNotNull:
+      path: spec.components.synchronizer.configOverride
+  - isSubset:
+      path: spec.components.synchronizer.configOverride
+      content:
+        conf_http_client_service_jetty.proxy.enabled: "true"
+        conf_http_client_service_jetty.proxy.host: foo-http-forward-proxy.com
+        conf_http_client_service_jetty.proxy.port: "2345"
+- it: environment when http forward proxy is enabled with username and password
+  values:
+    - test-values.yaml
+  set:
+    httpProxy:
+      host: foo-http-forward-proxy.com
+      port: 2345
+      username: bar-username
+      password: bar-password
+  asserts:
+  - isNotNull:
+      path: spec.components.synchronizer.configOverride
+  - isSubset:
+      path: spec.components.synchronizer.configOverride
+      content:
+        conf_http_client_service_jetty.proxy.enabled: "true"
+        conf_http_client_service_jetty.proxy.host: foo-http-forward-proxy.com
+        conf_http_client_service_jetty.proxy.password: YmFyLXBhc3N3b3Jk
+        conf_http_client_service_jetty.proxy.port: "2345"
+        conf_http_client_service_jetty.proxy.user: bar-username
+- it: environment with target http forward proxy is enabled
+  values:
+    - test-values.yaml
+  set:
+    envs:
+    - name: "foo"
+      httpProxy:
+        host: foo-http-target-forward-proxy.com
+        port: 2345
+  asserts:
+  - isNotNull:
+      path: spec.components.runtime.configOverride
+  - isSubset:
+      path: spec.components.runtime.configOverride
+      content:
+        conf/http.properties+HTTPClient.proxy.host: foo-http-target-forward-proxy.com
+        conf/http.properties+HTTPClient.proxy.port: "2345"
+        conf/http.properties+HTTPClient.proxy.type: HTTP
+        conf_http_HTTPClient.use.proxy: "true"
+- it: environment with target http forward proxy is enabled with username and password
+  values:
+    - test-values.yaml
+  set:
+    envs:
+    - name: "foo"
+      httpProxy:
+        host: foo-http-target-forward-proxy.com
+        port: 2345
+        username: unit-username
+        password: unit-password
+  asserts:
+  - isNotNull:
+      path: spec.components.runtime.configOverride
+  - isSubset:
+      path: spec.components.runtime.configOverride
+      content:
+        conf/http.properties+HTTPClient.proxy.host: foo-http-target-forward-proxy.com
+        conf/http.properties+HTTPClient.proxy.password: unit-password
+        conf/http.properties+HTTPClient.proxy.port: "2345"
+        conf/http.properties+HTTPClient.proxy.type: HTTP
+        conf/http.properties+HTTPClient.proxy.user: unit-username
+        conf_http_HTTPClient.use.proxy: "true"
+- it: template should fail if file not found
+  values:
+    - test-values.yaml
+  set:
+    envs:
+      - name: "foo"
+        serviceAccountPaths:
+          synchronizer: missing-file.txt
+  asserts:
+  - failedTemplate:
+      errorMessage: "'missing-file.txt' is either an empty file or unreachable"
+- it: template should fail if file is empty
+  values:
+    - test-values.yaml
+  set:
+    envs:
+      - name: "foo"
+        serviceAccountPaths:
+          synchronizer: test-empty-file.txt
+  asserts:
+    - failedTemplate:
+        errorMessage: "'test-empty-file.txt' is either an empty file or unreachable"
+- it: when federated WI is disabled (by default), the cprof agent profile cwc should be null
+  values:
+    - test-values.yaml
+  asserts:
+  - isNull:
+      path: spec.components.runtime.configOverride["bin_setenv_cprof_agent_profile"]
+  - isNull:
+      path: spec.components.synchronizer.configOverride["bin_setenv_cprof_agent_profile"]
+- it: when federated WI is disabled explicitly, the cprof agent profile cwc should be null
+  values:
+    - test-values.yaml
+  set:
+    gcp:
+      federatedWorkloadIdentity:
+        enabled: false
+  asserts:
+  - isNull:
+      path: spec.components.runtime.configOverride["bin_setenv_cprof_agent_profile"]
+  - isNull:
+      path: spec.components.synchronizer.configOverride["bin_setenv_cprof_agent_profile"]
+- it: when federated WI is enabled, the cprof agent profile cwc should be an empty string
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  asserts:
+  - equal:
+      path: spec.components.runtime.configOverride["bin_setenv_cprof_agent_profile"]
+      value: ""
+  - equal:
+      path: spec.components.synchronizer.configOverride["bin_setenv_cprof_agent_profile"]
+      value: ""
+- it: environment with GCP SA secret provider class
+  set:
+    org: bar
+    env: test
+    envs:
+      - name: "test"
+        serviceAccountSecretProviderClass: test-spc
+  asserts:
+    - equal:
+        path: spec.components.runtime.appServiceAccountSecretProviderClass
+        value: test-spc
+    - equal:
+        path: spec.components.synchronizer.appServiceAccountSecretProviderClass
+        value: test-spc
+    - equal:
+        path: spec.components.udca.appServiceAccountSecretProviderClass
+        value: test-spc
+- it: test that gcp.workloadIdentity and gcp.federatedWorkloadIdentity cannot both be enabled
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  set:
+    gcp:
+      workloadIdentity:
+        enabled: true
+  asserts:
+    - failedTemplate:
+        errorMessage: "gcp.workloadIdentity.enabled must be false to use federated workload identity"
+- it: tests if federated workload identity expirationSeconds cannot be 0
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  set:
+    gcp:
+      federatedWorkloadIdentity:
+        tokenExpiration: 0
+  asserts:
+    - failedTemplate:
+        errorMessage: "tokenExpiration >= 600 required for federatedWorkloadIdentity"
+- it: tests if federated workload identity expirationSeconds cannot be < 600
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  set:
+    gcp:
+      federatedWorkloadIdentity:
+        tokenExpiration: 599
+  asserts:
+    - failedTemplate:
+        errorMessage: "tokenExpiration >= 600 required for federatedWorkloadIdentity"
+- it: tests if federated workload identity expirationSeconds can be 600
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  set:
+    gcp:
+      federatedWorkloadIdentity:
+        tokenExpiration: 600
+  asserts:
+    - notFailedTemplate:
+- it: tests if federated workload identity expirationSeconds is overridden properly
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  set:
+    gcp:
+      federatedWorkloadIdentity:
+        tokenExpiration: 3601
+  asserts:
+    - isNotEmpty:
+        path: spec.components.synchronizer.volumes[?(@.name == "fwi-token")]
+    - equal:
+        path: spec.components.synchronizer.volumes[?(@.name == "fwi-token")].projected.sources[0].serviceAccountToken.expirationSeconds
+        value: 3601
+- it: tests if volumes and mounts are created when federated workload identity is enabled
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  asserts:
+    - isSubset:
+        path: spec.components.synchronizer.volumes[?(@.name == "fwi-token")]
+        content:
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: "this can be literally any value"
+                  expirationSeconds: 3600
+                  path: "baz"
+    - isSubset:
+        path: spec.components.udca.volumes[?(@.name == "fwi-token")]
+        content:
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: "this can be literally any value"
+                  expirationSeconds: 3600
+                  path: "baz"
+    - isSubset:
+        path: spec.components.runtime.volumes[?(@.name == "fwi-token")]
+        content:
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: "this can be literally any value"
+                  expirationSeconds: 3600
+                  path: "baz"
+    - isSubset:
+        path: spec.components.synchronizer.containers[?(@.name == "apigee-synchronizer")].volumeMounts[?(@.name == "fwi-token")]
+        content:
+          mountPath: "/foo/bar"
+          readOnly: true
+    - isSubset:
+        path: spec.components.udca.containers[?(@.name == "apigee-udca")].volumeMounts[?(@.name == "fwi-token")]
+        content:
+          mountPath: "/foo/bar"
+          readOnly: true
+        # At the time of writing, the fluentD container doesn't need the SA
+    - isSubset:
+        path: spec.components.runtime.containers[?(@.name == "apigee-runtime")].volumeMounts[?(@.name == "fwi-token")]
+        content:
+          mountPath: "/foo/bar"
+          readOnly: true
+- it: all components should not have requiredDuringSchedulingIgnoredDuringExecution if requiredForScheduling is false
+  values:
+  - test-values.yaml
+  set:
+    nodeSelector:
+      requiredForScheduling: false
+  asserts:
+  - notExists:
+      path: spec.components.synchronizer.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  - notExists:
+      path: spec.components.udca.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  - notExists:
+      path: spec.components.runtime.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+- it: synchronizer should have a global tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "key1"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.synchronizer.tolerations
+  - lengthEqual:
+      path: spec.components.synchronizer.tolerations
+      count: 1
+- it: synchronizer should have a component specific tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    synchronizer:
+      tolerations:
+      - key: "key1"
+        operator: "Equal"
+        value: "value1"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.synchronizer.tolerations
+  - lengthEqual:
+      path: spec.components.synchronizer.tolerations
+      count: 1
+- it: synchronizer should have a component specific tolerations even if global is provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "global"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    - key: "global2"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    synchronizer:
+      tolerations:
+      - key: "component"
+        operator: "Equal"
+        value: "synchronizer"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.synchronizer.tolerations
+  - lengthEqual:
+      path: spec.components.synchronizer.tolerations
+      count: 1
+  - isSubset:
+      path: spec.components.synchronizer
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "synchronizer"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec.components.synchronizer
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+- it: udca should have a global tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "key1"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.udca.tolerations
+  - lengthEqual:
+      path: spec.components.udca.tolerations
+      count: 1
+- it: udca should have a component specific tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    udca:
+      tolerations:
+      - key: "key1"
+        operator: "Equal"
+        value: "value1"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.udca.tolerations
+  - lengthEqual:
+      path: spec.components.udca.tolerations
+      count: 1
+- it: udca should have a component specific tolerations even if global is provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "global"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    - key: "global2"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    udca:
+      tolerations:
+      - key: "component"
+        operator: "Equal"
+        value: "udca"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.udca.tolerations
+  - lengthEqual:
+      path: spec.components.udca.tolerations
+      count: 1
+  - isSubset:
+      path: spec.components.udca
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "udca"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec.components.udca
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+- it: runtime should have a global tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "key1"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.runtime.tolerations
+  - lengthEqual:
+      path: spec.components.runtime.tolerations
+      count: 1
+- it: runtime should have a component specific tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    runtime:
+      tolerations:
+      - key: "key1"
+        operator: "Equal"
+        value: "value1"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.runtime.tolerations
+  - lengthEqual:
+      path: spec.components.runtime.tolerations
+      count: 1
+- it: runtime should have a component specific tolerations even if global is provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "global"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    - key: "global2"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    runtime:
+      tolerations:
+      - key: "component"
+        operator: "Equal"
+        value: "runtime"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.runtime.tolerations
+  - lengthEqual:
+      path: spec.components.runtime.tolerations
+      count: 1
+  - isSubset:
+      path: spec.components.runtime
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "runtime"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec.components.runtime
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+- it: ess encryption key
+  values:
+  - test-values.yaml
+  set:
+    org: bar
+    env: test
+    envs:
+      - name: "test"
+        encryptionKeySecretProviderClass: test-spc
+  asserts:
+  - equal:
+      path: spec.dataEncryptionSecretProviderClass
+      value: test-spc
+  - isNull:
+      path: spec.components.runtime.containers[?(@.name == "apigee-runtime")].env[?(@.name == "BAR_KMS_ENCRYPTION_KEY")]
+  - isNull:
+      path: spec.components.runtime.containers[?(@.name == "apigee-runtime")].env[?(@.name == "BAR_KVM_ENCRYPTION_KEY")]
+  - isNull:
+      path: spec.components.runtime.containers[?(@.name == "apigee-runtime")].env[?(@.name == "BAR_TEST_KVM_ENCRYPTION_KEY")]
+  - isNull:
+      path: spec.components.runtime.containers[?(@.name == "apigee-runtime")].env[?(@.name == "BAR_CACHE_ENCRYPTION_KEY")]
+- it: additional envs
+  values:
+  - test-values.yaml
+  set:
+    org: bar
+    env: test
+    runtime:
+      envVars:
+        KEY_1 : "unit-test-value1"
+        KEY_2 : "unit-test-value2"
+    envs:
+    - name: "test"
+      encryptionKeySecretProviderClass: test-spc
+  asserts:
+  - equal:
+      path: spec.components.runtime.containers[?(@.name == "apigee-runtime")].env
+      value:
+      - name: KEY_1
+        value: unit-test-value1
+      - name: KEY_2
+        value: unit-test-value2
+      - name: DYNAMIC_TARGET_METRICS_AGG_ENABLED
+        value: "true"
+- it: non-api traffic bypasses forward proxy
+  values:
+    - test-nonapi-skip-forwardproxy.yaml
+  set:
+    env: "bar"
+    httpProxy:
+  asserts:
+  - isNotNull:
+      path: spec.components.runtime.configOverride
+  - isSubset:
+      path: spec.components.runtime.configOverride
+      content:
+        conf/http.properties+HTTPClient.proxy.host: 10.156.15.119
+        conf/http.properties+HTTPClient.proxy.password: secret345
+        conf/http.properties+HTTPClient.proxy.port: "3128"
+        conf/http.properties+HTTPClient.proxy.type: HTTP
+        conf/http.properties+HTTPClient.proxy.user: user1
+        conf_http_HTTPClient.block.linklocal.connections: "false"
+        conf_http_HTTPClient.block.sitelocal.connections: "false"
+        conf_http_HTTPClient.use.proxy: "true"
+        conf_http_HTTPClient.managementplane.skip.proxy: "true"
+        conf_metrics_server.metrics.latency.histogram.buckets.milliseconds: EXPONENTIAL,1,1.78435658,20
+- it: check security context with component seccomp profile
+  set:
+    env: test
+    synchronizer:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+    runtime:
+      securityContext:
+        seccompProfile:
+          type: Unconfined
+    envs:
+      - name: test
+  asserts:
+  - equal:
+      path: spec.components.synchronizer.securityContext.seccompProfile.type
+      value: RuntimeDefault
+  - equal:
+      path: spec.components.runtime.securityContext.seccompProfile.type
+      value: Unconfined
+- it: check security context with envs seccomp profile
+  set:
+    env: test
+    envs:
+      - name: test
+        securityContext:
+          seccompProfile:
+            type: RuntimeDefault
+  asserts:
+  - equal:
+      path: spec.components.synchronizer.securityContext.seccompProfile.type
+      value: RuntimeDefault
+  - equal:
+      path: spec.components.runtime.securityContext.seccompProfile.type
+      value: RuntimeDefault
+- it: check security context with org seccomp profile
+  set:
+    env: test
+    securityContext:
+      seccompProfile:
+        type: RuntimeDefault
+    envs:
+      - name: test
+  asserts:
+  - equal:
+      path: spec.components.synchronizer.securityContext.seccompProfile.type
+      value: RuntimeDefault
+  - equal:
+      path: spec.components.runtime.securityContext.seccompProfile.type
+      value: RuntimeDefault
+- it: check the priority between component and envs security context
+  set:
+    env: test
+    envs:
+      - name: test
+        securityContext:
+          seccompProfile:
+            type: RuntimeDefault
+    synchronizer:
+      securityContext:
+        seccompProfile:
+          type: Unconfined
+  asserts:
+  - equal:
+      path: spec.components.synchronizer.securityContext.seccompProfile.type
+      value: Unconfined
+- it: check the priority between component and org security context
+  set:
+    env: test
+    securityContext:
+      seccompProfile:
+        type: RuntimeDefault
+    runtime:
+      securityContext:
+        seccompProfile:
+          type: Localhost
+          localhostProfile: /foo/bar
+    envs:
+      - name: test
+  asserts:
+  - equal:
+      path: spec.components.runtime.securityContext.seccompProfile.type
+      value: Localhost
+- it: check the priority between envs and org security context
+  set:
+    env: test
+    securityContext:
+      seccompProfile:
+        type: Localhost
+        localhostProfile: /foo/bar
+    envs:
+      - name: test
+        securityContext:
+          seccompProfile:
+            type: RuntimeDefault
+  asserts:
+  - equal:
+      path: spec.components.runtime.securityContext.seccompProfile.type
+      value: RuntimeDefault
+- it: should fail if the seccomp profile is not among RuntimeDefault, Localhost and Unconfined.
+  set:
+    env: test
+    runtime:
+      securityContext:
+        seccompProfile:
+          type: Default
+    envs:
+      - name: test
+  asserts:
+  - failedTemplate:
+      errorMessage: "The seccomp profile type value should be empty or among RuntimeDefault, Unconfined, Localhost."
+- it: should fail if the seccomp localhostProfile is not empty but the type is not Localhost
+  set:
+    env: test
+    synchronizer:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+          localhostProfile: /foo/bar
+    envs:
+      - name: test
+  asserts:
+  - failedTemplate:
+      errorMessage: "The localhostProfile should be empty if the seccomp profile type is not Localhost."
+- it: should fail if the seccomp localhostProfile is not empty but the type is not Localhost
+  set:
+    env: test
+    runtime:
+      securityContext:
+        seccompProfile:
+          type: Localhost
+    envs:
+      - name: test
+  asserts:
+  - failedTemplate:
+      errorMessage: "The localhostProfile can't be empty if the seccomp profile type is Localhost."
+- it: environment with classificationV2 enabled
+  values:
+    - test-values.yaml
+  set:
+    envs:
+    - name: "foo"
+      classificationV2Enabled: "true"
+  asserts:
+  - isNotNull:
+      path: spec.components.runtime.configOverride
+  - isSubset:
+      path: spec.components.runtime.configOverride
+      content:
+        conf_message-processor-communication_classificationV2.enabled: "true"

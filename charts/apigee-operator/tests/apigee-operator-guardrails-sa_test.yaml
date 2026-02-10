@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: apigee-operator-guardrails-sa-test
+templates:
+- apigee-operator-guardrails-sa.yaml
+release:
+  name: test-release
+  namespace: test-namespace
+
+tests:
+- it: guardrails sa is null by default
+  asserts:
+  - hasDocuments:
+      count: 0
+- it: should render a ServiceAccount when gke wi is enabled
+  set:
+    gcp.workloadIdentity.enabled: true
+    guardrails.gsa: "test-gsa@google.com"
+  asserts:
+  - isKind:
+      of: ServiceAccount
+  - isAPIVersion:
+      of: v1
+  - equal:
+      path: metadata.name
+      value: apigee-operator-guardrails-sa
+  - equal:
+      path: metadata.namespace
+      value: test-namespace
+  - equal:
+      path: metadata.annotations["helm.sh/hook"]
+      value: pre-install,pre-upgrade
+  - equal:
+      path: metadata.annotations["helm.sh/hook-delete-policy"]
+      value: before-hook-creation
+  - equal:
+      path: metadata.annotations["helm.sh/hook-weight"]
+      value: "-5"
+  - equal:
+      path: metadata.annotations["iam.gke.io/gcp-service-account"]
+      value: "test-gsa@google.com"
+- it: should render a ServiceAccount when vault is enabled
+  set:
+    serviceAccountSecretProviderClass: test
+  asserts:
+  - isKind:
+      of: ServiceAccount
+  - isAPIVersion:
+      of: v1
+  - equal:
+      path: metadata.name
+      value: apigee-operator-guardrails-sa
+  - equal:
+      path: metadata.namespace
+      value: test-namespace
+  - equal:
+      path: metadata.annotations["helm.sh/hook"]
+      value: pre-install,pre-upgrade
+  - equal:
+      path: metadata.annotations["helm.sh/hook-delete-policy"]
+      value: before-hook-creation
+  - equal:
+      path: metadata.annotations["helm.sh/hook-weight"]
+      value: "-5"
+- it: should not have gcp-service-account annotation when workloadIdentity is disabled
+  set:
+    gcp:
+      workloadIdentity:
+        enabled: false
+  asserts:
+  - notExists:
+      path: metadata.annotations["iam.gke.io/gcp-service-account"]

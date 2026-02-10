@@ -1,0 +1,25 @@
+org: bar
+
+envs:
+  - name: "foo"
+    serviceAccountPaths:
+      runtime: test-file.txt
+      udca: test-file.txt
+      synchronizer: test-file.txt
+    components:
+      runtime:
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 1000Mi
+          limits:
+            cpu: 6000m
+            memory: 6000Mi
+        cwcAppend:
+          bin_setenv_max_mem: 4096m
+          conf_http_HTTPClient.block.linklocal.connections: "true"
+  - name: "bar"
+    serviceAccountPaths:
+      runtime: test-file.txt
+      udca: test-file.txt
+      synchronizer: test-file.txt

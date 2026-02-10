@@ -1,0 +1,772 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: redis-test
+templates:
+- redis.yaml
+release:
+  name: test-release
+
+tests:
+- it: redis cr should not be empty
+  asserts:
+  - isKind:
+      of: ApigeeRedis
+  - isAPIVersion:
+      of: apigee.cloud.google.com/v1alpha1
+  - equal:
+      path: metadata.name
+      value: default
+  - equal:
+      path: spec.credentialRef
+      value: apigee-redis-default-creds
+- it: redis creds when an auth secret provider class is provided
+  set:
+    redis.auth.secretProviderClass: unittest-spc
+  asserts:
+  - equal:
+      path: spec.credentialSecretProviderClass
+      value: unittest-spc
+  - isNull:
+      path: spec.credentialRef
+- it: redis credentialRef when an auth secret is provided
+  set:
+    redis.auth.secret: unittest-auth-sec
+  asserts:
+  - equal:
+      path: spec.credentialRef
+      value: unittest-auth-sec
+- it: redis should not have imagepullsecret by default
+  asserts:
+  - isNull:
+      path: spec.imagePullSecrets
+- it: redis should have an overridden imagePullSecrets
+  set:
+    imagePullSecrets:
+    - foo-img-pull-secret0
+    - foo-img-pull-secret1
+  asserts:
+  - isNotEmpty:
+      path: spec.imagePullSecrets
+  - lengthEqual:
+      path: spec.imagePullSecrets
+      count: 2
+  - equal:
+      path: spec.imagePullSecrets[0]
+      value: foo-img-pull-secret0
+  - equal:
+      path: spec.imagePullSecrets[1]
+      value: foo-img-pull-secret1
+- it: redis check security context
+  asserts:
+  - isSubset:
+      path: spec.components.redis.securityContext
+      content:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 998
+        privileged: false
+- it: redis default node selector
+  asserts:
+  - isSubset:
+      path: spec.components.redis.nodeAffinity
+      content:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+- it: overridden node selector
+  set:
+    nodeSelector:
+      requiredForScheduling: true
+      apigeeRuntime:
+        key: "node-pool-test"
+        value: "apigee-unittest"
+  asserts:
+  - isSubset:
+      path: spec.components.redis.nodeAffinity
+      content:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "node-pool-test"
+              operator: In
+              values:
+              - "apigee-unittest"
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: "node-pool-test"
+              operator: In
+              values:
+              - "apigee-unittest"
+- it: should not have tolerations by default
+  asserts:
+  - isNull:
+      path: spec.components.redis.tolerations
+- it: should not have annotations by default
+  asserts:
+  - isNull:
+      path: spec.components.redis.annotations
+- it: should not have an empty version
+  asserts:
+  - isNotEmpty:
+      path: spec.components.redis.version
+- it: default redis replica count
+  asserts:
+  - equal:
+      path: spec.components.redis.replicas
+      value: 2
+- it: override redis replica count
+  set:
+    redis.replicaCount: 7
+  asserts:
+  - equal:
+      path: spec.components.redis.replicas
+      value: 7
+- it: when image hub is defined
+  set:
+    hub: unittest-gcr.img.com
+  asserts:
+  - matchRegex:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].image
+      pattern: ^unittest-gcr.img.com/apigee-redis:?
+- it: redis image pull policy
+  asserts:
+  - equal:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].imagePullPolicy
+      value: IfNotPresent
+- it: override redis image pull policy
+  set:
+    redis.image.pullPolicy: Always
+  asserts:
+  - equal:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].imagePullPolicy
+      value: Always
+- it: redis default liveness probe
+  asserts:
+  - isSubset:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].livenessProbe
+      content:
+        exec:
+          command:
+          - /app/redis-prober
+          - --action=healthcheck
+          - --skip_tls_verify=true
+        periodSeconds: 5
+        timeoutSeconds: 3
+        successThreshold: 1
+        failureThreshold: 6
+  - notExists:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].livenessProbe.initialDelaySeconds
+- it: redis custom liveness probe
+  set:
+    redis:
+      livenessProbe:
+        exec:
+          command:
+          - /app/redis-prober
+          - --action=healthcheck
+          - --skip_tls_verify=false
+        periodSeconds: 15
+        timeoutSeconds: 13
+        successThreshold: 11
+        failureThreshold: 16
+  asserts:
+  - isSubset:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].livenessProbe
+      content:
+        exec:
+          command:
+          - /app/redis-prober
+          - --action=healthcheck
+          - --skip_tls_verify=false
+        periodSeconds: 15
+        timeoutSeconds: 13
+        successThreshold: 11
+        failureThreshold: 16
+- it: redis liveness probe with ESS
+  set:
+    redis:
+      auth:
+        secretProviderClass: test-spc
+  asserts:
+  - isSubset:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].livenessProbe
+      content:
+        exec:
+          command:
+          - /app/redis-prober
+          - --action=healthcheck
+          - --skip_tls_verify=true
+          - --password_path=/opt/apigee/external-secrets/redis/redis-password
+- it: redis liveness probe with ESS and custom exec fails
+  set:
+    redis:
+      auth:
+        secretProviderClass: test-spc
+      livenessProbe:
+        exec:
+          command:
+          - "a"
+          - "b"
+  asserts:
+  - failedTemplate:
+      errorMessage: Using an external secret store (e.g. Vault) to provide Redis credentials and a custom livenessProbe.exec will cause the exec to be overridden and is unsupported.
+- it: redis liveness probe initial delay seconds
+  set:
+    redis:
+      livenessProbe:
+        initialDelaySeconds: 1
+  asserts:
+  - equal:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].livenessProbe.initialDelaySeconds
+      value: 1
+- it: redis liveness probe period seconds
+  set:
+    redis:
+      livenessProbe:
+        periodSeconds: 10
+  asserts:
+  - equal:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].livenessProbe.periodSeconds
+      value: 10
+- it: redis liveness probe timeout seconds
+  set:
+    redis:
+      livenessProbe:
+        timeoutSeconds: 10
+  asserts:
+  - equal:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].livenessProbe.timeoutSeconds
+      value: 10
+- it: redis liveness probe success threshold
+  set:
+    redis:
+      livenessProbe:
+        successThreshold: 10
+  asserts:
+  - equal:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].livenessProbe.successThreshold
+      value: 10
+- it: redis liveness probe failure threshold
+  set:
+    redis:
+      livenessProbe:
+        failureThreshold: 10
+  asserts:
+  - equal:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].livenessProbe.failureThreshold
+      value: 10
+- it: redis default readiness probe
+  asserts:
+  - isSubset:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].readinessProbe
+      content:
+        exec:
+          command:
+          - /app/redis-prober
+          - --action=healthcheck
+          - --skip_tls_verify=true
+        periodSeconds: 5
+        timeoutSeconds: 3
+        successThreshold: 1
+        failureThreshold: 12
+  - notExists:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].readinessProbe.initialDelaySeconds
+- it: redis custom readiness probe
+  set:
+    redis:
+      readinessProbe:
+        exec:
+          command:
+          - /app/redis-prober
+          - --action=healthcheck
+          - --skip_tls_verify=false
+        periodSeconds: 5
+        timeoutSeconds: 13
+        successThreshold: 11
+        failureThreshold: 6
+  asserts:
+  - isSubset:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].readinessProbe
+      content:
+        exec:
+          command:
+          - /app/redis-prober
+          - --action=healthcheck
+          - --skip_tls_verify=false
+        periodSeconds: 5
+        timeoutSeconds: 13
+        successThreshold: 11
+        failureThreshold: 6
+- it: redis readiness probe with ESS
+  set:
+    redis:
+      auth:
+        secretProviderClass: test-spc
+  asserts:
+  - isSubset:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].readinessProbe
+      content:
+        exec:
+          command:
+          - /app/redis-prober
+          - --action=healthcheck
+          - --skip_tls_verify=true
+          - --password_path=/opt/apigee/external-secrets/redis/redis-password
+- it: redis readiness probe with ESS and custom exec fails
+  set:
+    redis:
+      auth:
+        secretProviderClass: test-spc
+      readinessProbe:
+        exec:
+          command:
+          - "a"
+          - "b"
+  asserts:
+  - failedTemplate:
+      errorMessage: Using an external secret store (e.g. Vault) to provide Redis credentials and a custom readinessProbe.exec will cause the exec to be overridden and is unsupported.
+- it: redis readiness probe initial delay seconds
+  set:
+    redis:
+      readinessProbe:
+        initialDelaySeconds: 1
+  asserts:
+  - equal:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].readinessProbe.initialDelaySeconds
+      value: 1
+- it: redis readiness probe period seconds
+  set:
+    redis:
+      readinessProbe:
+        periodSeconds: 10
+  asserts:
+  - equal:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].readinessProbe.periodSeconds
+      value: 10
+- it: redis readiness probe timeout seconds
+  set:
+    redis:
+      readinessProbe:
+        timeoutSeconds: 10
+  asserts:
+  - equal:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].readinessProbe.timeoutSeconds
+      value: 10
+- it: redis readiness probe success threshold
+  set:
+    redis:
+      readinessProbe:
+        successThreshold: 10
+  asserts:
+  - equal:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].readinessProbe.successThreshold
+      value: 10
+- it: redis readiness probe failure threshold
+  set:
+    redis:
+      readinessProbe:
+        failureThreshold: 10
+  asserts:
+  - equal:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].readinessProbe.failureThreshold
+      value: 10
+- it: redis default resources
+  asserts:
+  - isSubset:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].resources
+      content:
+        requests:
+          cpu: 500m
+- it: redis custom resources
+  set:
+    redis:
+      resources:
+        requests:
+          cpu: 500m
+        limits:
+          cpu: 1000m
+  asserts:
+  - isSubset:
+      path: spec.components.redis.containers[?(@.name == "apigee-redis")].resources
+      content:
+        requests:
+          cpu: 500m
+        limits:
+          cpu: 1000m
+- it: redis envoy check security context
+  asserts:
+  - isSubset:
+      path: spec.components.redisEnvoy.securityContext
+      content:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 998
+        privileged: false
+- it: redis envoy default node selector
+  asserts:
+  - isSubset:
+      path: spec.components.redisEnvoy.nodeAffinity
+      content:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+- it: redis envoy overridden node selector
+  set:
+    nodeSelector:
+      requiredForScheduling: true
+      apigeeRuntime:
+        key: "node-pool-test"
+        value: "apigee-unittest"
+  asserts:
+  - isSubset:
+      path: spec.components.redisEnvoy.nodeAffinity
+      content:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "node-pool-test"
+              operator: In
+              values:
+              - "apigee-unittest"
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: "node-pool-test"
+              operator: In
+              values:
+              - "apigee-unittest"
+- it: redis envoy should not have tolerations by default
+  asserts:
+  - isNull:
+      path: spec.components.redisEnvoy.tolerations
+- it: redis envoy should not have annotations by default
+  asserts:
+  - isNull:
+      path: spec.components.redisEnvoy.annotations
+- it: redis envoy should not have an empty version
+  asserts:
+  - isNotEmpty:
+      path: spec.components.redisEnvoy.version
+- it: redis envoy default autoScaler
+  asserts:
+  - equal:
+      path: spec.components.redisEnvoy.autoScaler.minReplicas
+      value: 1
+  - equal:
+      path: spec.components.redisEnvoy.autoScaler.maxReplicas
+      value: 1
+- it: redis envoy overridden autoScaler
+  set:
+    redis:
+      envoy:
+        replicaCountMin: 3
+        replicaCountMax: 6
+  asserts:
+  - equal:
+      path: spec.components.redisEnvoy.autoScaler.minReplicas
+      value: 3
+  - equal:
+      path: spec.components.redisEnvoy.autoScaler.maxReplicas
+      value: 6
+- it: when image hub is defined
+  set:
+    hub: unittest-gcr.img.com
+  asserts:
+  - matchRegex:
+      path: spec.components.redisEnvoy.containers[?(@.name == "apigee-redis-envoy")].image
+      pattern: ^unittest-gcr.img.com/apigee-envoy:?
+- it: redis envoy image pull policy
+  asserts:
+  - equal:
+      path: spec.components.redisEnvoy.containers[?(@.name == "apigee-redis-envoy")].imagePullPolicy
+      value: IfNotPresent
+- it: override redis envoy image pull policy
+  set:
+    redis.envoy.image.pullPolicy: Always
+  asserts:
+  - equal:
+      path: spec.components.redisEnvoy.containers[?(@.name == "apigee-redis-envoy")].imagePullPolicy
+      value: Always
+- it: redis default resources
+  asserts:
+  - isSubset:
+      path: spec.components.redisEnvoy.containers[?(@.name == "apigee-redis-envoy")].resources
+      content:
+        requests:
+          cpu: 500m
+          memory: 512Mi
+        limits:
+          cpu: 2000m
+          memory: 2Gi
+- it: redis envoy custom resources
+  set:
+    redis:
+      envoy:
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+  asserts:
+  - isSubset:
+      path: spec.components.redisEnvoy.containers[?(@.name == "apigee-redis-envoy")].resources
+      content:
+        requests:
+          cpu: 500m
+          memory: 512Mi
+        limits:
+          cpu: 1000m
+          memory: 1Gi
+- it: redis lifecycle ESS
+  set:
+    redis:
+      auth:
+        secretProviderClass: test-spc
+  asserts:
+  - isSubset:
+      path: spec.components.redis.lifecycle
+      content:
+        postStart:
+          exec:
+            command:
+            - /app/redis-prober
+            - --skip_tls_verify=true
+            - --password_path=/opt/apigee/external-secrets/redis/redis-password
+- it: all components should not have requiredDuringSchedulingIgnoredDuringExecution if requiredForScheduling is false
+  set:
+    nodeSelector:
+      requiredForScheduling: false
+  asserts:
+  - notExists:
+      path: spec.components.redis.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  - notExists:
+      path: spec.components.redisEnvoy.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+- it: redis should have a global tolerations when provided
+  set:
+    tolerations:
+    - key: "key1"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.redis.tolerations
+  - lengthEqual:
+      path: spec.components.redis.tolerations
+      count: 1
+- it: redis should have a component specific tolerations when provided
+  set:
+    redis:
+      tolerations:
+      - key: "key1"
+        operator: "Equal"
+        value: "value1"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.redis.tolerations
+  - lengthEqual:
+      path: spec.components.redis.tolerations
+      count: 1
+- it: redis should have a component specific tolerations even if global is provided
+  set:
+    tolerations:
+    - key: "global"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    - key: "global2"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    redis:
+      tolerations:
+      - key: "component"
+        operator: "Equal"
+        value: "redis"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.redis.tolerations
+  - lengthEqual:
+      path: spec.components.redis.tolerations
+      count: 1
+  - isSubset:
+      path: spec.components.redis
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "redis"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec.components.redis
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+- it: redis envoy should have a global tolerations when provided
+  set:
+    tolerations:
+    - key: "key1"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.redisEnvoy.tolerations
+  - lengthEqual:
+      path: spec.components.redisEnvoy.tolerations
+      count: 1
+- it: redis envoy should have a component specific tolerations when provided
+  set:
+    redis:
+      envoy:
+        tolerations:
+        - key: "key1"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.redisEnvoy.tolerations
+  - lengthEqual:
+      path: spec.components.redisEnvoy.tolerations
+      count: 1
+- it: redis envoy should have a component specific tolerations even if global is provided
+  set:
+    tolerations:
+    - key: "global"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    - key: "global2"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    redis:
+      envoy:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "redisEnvoy"
+          effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.redisEnvoy.tolerations
+  - lengthEqual:
+      path: spec.components.redisEnvoy.tolerations
+      count: 1
+  - isSubset:
+      path: spec.components.redisEnvoy
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "redisEnvoy"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec.components.redisEnvoy
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+- it: check security context with component seccomp profile
+  set:
+    redis:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+  asserts:
+  - equal:
+      path: spec.components.redis.securityContext.seccompProfile.type
+      value: RuntimeDefault
+- it: check security context with org seccomp profile
+  set:
+    securityContext:
+      seccompProfile:
+        type: RuntimeDefault
+  asserts:
+  - equal:
+      path: spec.components.redis.securityContext.seccompProfile.type
+      value: RuntimeDefault
+  - equal:
+      path: spec.components.redisEnvoy.securityContext.seccompProfile.type
+      value: RuntimeDefault
+- it: check the priority between component and org security context
+  set:
+    securityContext:
+      seccompProfile:
+        type: RuntimeDefault
+    redis:
+      envoy:
+        securityContext:
+          seccompProfile:
+            type: Localhost
+            localhostProfile: /foo/bar
+  asserts:
+  - equal:
+      path: spec.components.redisEnvoy.securityContext.seccompProfile.type
+      value: Localhost
+- it: should fail if the seccomp profile is not among RuntimeDefault, Localhost and Unconfined.
+  set:
+    redis:
+      envoy:
+        securityContext:
+          seccompProfile:
+            type: Default
+  asserts:
+  - failedTemplate:
+      errorMessage: "The seccomp profile type value should be empty or among RuntimeDefault, Unconfined, Localhost."
+- it: should fail if the seccomp localhostProfile is not empty but the type is not Localhost
+  set:
+    redis:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+          localhostProfile: /foo/bar
+  asserts:
+  - failedTemplate:
+      errorMessage: "The localhostProfile should be empty if the seccomp profile type is not Localhost."
+- it: should fail if the seccomp localhostProfile is empty but the type is Localhost
+  set:
+    redis:
+      securityContext:
+        seccompProfile:
+          type: Localhost
+  asserts:
+  - failedTemplate:
+      errorMessage: "The localhostProfile can't be empty if the seccomp profile type is Localhost."

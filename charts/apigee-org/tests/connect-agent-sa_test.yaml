@@ -1,0 +1,27 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: connect-agent-sa-test
+templates:
+- connect-agent-sa.yaml
+release:
+  name: test-release
+
+tests:
+- it: connect agent sa is null by default
+  values:
+    - test-values.yaml
+  asserts:
+  - hasDocuments:
+      count: 0
+- it: connect agent sa is not null when gke wi is enabled
+  values:
+    - test-values.yaml
+  set:
+    gcp.workloadIdentity.enabled: true
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: ServiceAccount
+  - isAPIVersion:
+      of: v1

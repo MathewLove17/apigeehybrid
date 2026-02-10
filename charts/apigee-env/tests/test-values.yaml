@@ -1,0 +1,10 @@
+org: bar
+
+env: foo
+
+envs:
+  - name: "foo"
+    serviceAccountPaths:
+      runtime: test-file.txt
+      udca: test-file.txt
+      synchronizer: test-file.txt

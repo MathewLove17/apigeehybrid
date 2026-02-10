@@ -1,0 +1,331 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: apigee-operators-guardrails-test
+templates:
+- apigee-operators-guardrails.yaml
+release:
+  name: test-release
+
+tests:
+- it: pod spec should not have requiredDuringSchedulingIgnoredDuringExecution if requiredForScheduling is false
+  set:
+    nodeSelector:
+      requiredForScheduling: false
+  asserts:
+  - notExists:
+      path: spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+- it: guardrails pod should not have toleration by default
+  asserts:
+  - isNull:
+      path: spec.tolerations
+- it: guardrails pod with global toleration
+  set:
+    tolerations:
+    - key: "key1"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoExecute"
+      tolerationSeconds: 20
+  asserts:
+  - isNotNull:
+      path: spec.tolerations
+- it: guardrail with component specific toleration
+  set:
+    guardrails:
+      tolerations:
+      - key: "key1"
+        operator: "Equal"
+        value: "value1"
+        effect: "NoExecute"
+        tolerationSeconds: 20
+  asserts:
+  - isNotNull:
+      path: spec.tolerations
+- it: guardrails should have a component specific tolerations even if global is provided
+  set:
+    tolerations:
+    - key: "global"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    - key: "global2"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    guardrails:
+      tolerations:
+      - key: "component"
+        operator: "Equal"
+        value: "guardrails"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.tolerations
+  - lengthEqual:
+      path: spec.tolerations
+      count: 1
+  - isSubset:
+      path: spec
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "guardrails"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+- it: pod spec should have 1 document without no-hooks flag
+  asserts:
+  - hasDocuments:
+      count: 1
+- it: guardrails config should not be empty
+  asserts:
+  - isKind:
+      of: Pod
+  - isAPIVersion:
+      of: v1
+  - equal:
+      path: metadata.name
+      value: apigee-hybrid-helm-guardrail-operator
+- it: guardrails label should be present
+  asserts:
+  - equal:
+      path: metadata.labels.app
+      value: apigee-hybrid-helm-guardrail
+- it: guardrails container name should be present
+  asserts:
+  - isNotNull:
+      path: spec.containers[?(@.name == "apigee-hybrid-helm-guardrail-container")].env[?(@.name == "COMPONENT")]
+- it: guardrails container should have endpoint set
+  asserts:
+  - isNotNull:
+      path: spec.containers[?(@.name == "apigee-hybrid-helm-guardrail-container")].env[?(@.name == "APIGEE_ENDPOINT")]
+- it: guardrails container should have ProjectID set
+  asserts:
+  - isNotNull:
+      path: spec.containers[?(@.name == "apigee-hybrid-helm-guardrail-container")].env[?(@.name == "PROJECTID")]
+- it: guardrails pod should never restart
+  asserts:
+  - equal:
+      path: spec.restartPolicy
+      value: Never
+- it: check security context with component seccomp profile
+  set:
+    guardrails:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+  asserts:
+  - equal:
+      path: spec.securityContext.seccompProfile.type
+      value: RuntimeDefault
+- it: check security context with org seccomp profile
+  set:
+    securityContext:
+      seccompProfile:
+        type: RuntimeDefault
+  asserts:
+  - equal:
+      path: spec.securityContext.seccompProfile.type
+      value: RuntimeDefault
+- it: check the priority between component and org security context
+  set:
+    securityContext:
+      seccompProfile:
+        type: RuntimeDefault
+    guardrails:
+      securityContext:
+        seccompProfile:
+          type: Localhost
+          localhostProfile: /foo/bar
+  asserts:
+  - equal:
+      path: spec.securityContext.seccompProfile.type
+      value: Localhost
+- it: should fail if the seccomp profile is not among RuntimeDefault, Localhost and Unconfined.
+  set:
+    guardrails:
+      securityContext:
+        seccompProfile:
+          type: Default
+  asserts:
+  - failedTemplate:
+      errorMessage: "The seccomp profile type value should be empty or among RuntimeDefault, Unconfined, Localhost."
+- it: should fail if the seccomp localhostProfile is not empty but the type is not Localhost
+  set:
+    guardrails:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+          localhostProfile: /foo/bar
+  asserts:
+  - failedTemplate:
+      errorMessage: "The localhostProfile should be empty if the seccomp profile type is not Localhost."
+- it: should fail if the seccomp localhostProfile is empty but the type is Localhost
+  set:
+    guardrails:
+      securityContext:
+        seccompProfile:
+          type: Localhost
+  asserts:
+  - failedTemplate:
+      errorMessage: "The localhostProfile can't be empty if the seccomp profile type is Localhost."
+- it: workload identity is enabled
+  set:
+    gcp.workloadIdentity.enabled: true
+  asserts:
+  - equal:
+      path: spec.serviceAccountName
+      value: apigee-operator-guardrails-sa
+  - notContains:
+      path: spec.containers[?(@.name == "apigee-hybrid-helm-guardrail-container")].env
+      content:
+        name: GOOGLE_APPLICATION_CREDENTIALS
+  - notContains:
+      path: spec.containers[?(@.name == "apigee-hybrid-helm-guardrail-container")].volumeMounts
+      content:
+        name: svc-account-volume
+  - notContains:
+      path: spec.volumes
+      content:
+        name: apigee-external-secrets-gsa
+  - notContains:
+      path: spec.volumes
+      content:
+        name: svc-account-volume
+- it: vault
+  set:
+    serviceAccountSecretProviderClass: spc
+  asserts:
+  - contains:
+      path: spec.containers[?(@.name == "apigee-hybrid-helm-guardrail-container")].env
+      content:
+        name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /opt/apigee/external-secrets/gsa/guardrails
+  - contains:
+      path: spec.containers[?(@.name == "apigee-hybrid-helm-guardrail-container")].volumeMounts
+      content:
+        name: apigee-external-secrets-gsa
+        mountPath: /opt/apigee/external-secrets/gsa
+        readOnly: true
+  - contains:
+      path: spec.volumes
+      content:
+        name: apigee-external-secrets-gsa
+        csi:
+          driver: "secrets-store.csi.k8s.io"
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: spc
+- it: non-vault
+  asserts:
+  - contains:
+      path: spec.containers[?(@.name == "apigee-hybrid-helm-guardrail-container")].env
+      content:
+        name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/secret/client_secret.json
+  - contains:
+      path: spec.containers[?(@.name == "apigee-hybrid-helm-guardrail-container")].volumeMounts
+      content:
+        name: svc-account-volume
+        mountPath: /etc/secret
+        readOnly: true
+  - contains:
+      path: spec.volumes
+      content:
+        name: svc-account-volume
+        secret:
+          secretName: apigee-operator-guardrails-svc-account
+- it: non-vault serviceAccountRef
+  set:
+    guardrails.serviceAccountRef: ref
+  asserts:
+  - contains:
+      path: spec.containers[?(@.name == "apigee-hybrid-helm-guardrail-container")].env
+      content:
+        name: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/secret/client_secret.json
+  - contains:
+      path: spec.containers[?(@.name == "apigee-hybrid-helm-guardrail-container")].volumeMounts
+      content:
+        name: svc-account-volume
+        mountPath: /etc/secret
+        readOnly: true
+  - contains:
+      path: spec.volumes
+      content:
+        name: svc-account-volume
+        secret:
+          secretName: ref
+- it: test that gcp.workloadIdentity and gcp.federatedWorkloadIdentity cannot both be enabled
+  values:
+  - test-values.yaml
+  - test-fwi-values.yaml
+  set:
+    gcp.workloadIdentity.enabled: true
+  asserts:
+  - failedTemplate:
+      errorMessage: "gcp.workloadIdentity.enabled must be false to use federated workload identity"
+- it: tests if federated workload identity expirationSeconds cannot be 0
+  values:
+  - test-values.yaml
+  - test-fwi-values.yaml
+  set:
+    gcp.federatedWorkloadIdentity.tokenExpiration: 0
+  asserts:
+  - failedTemplate:
+      errorMessage: "tokenExpiration >= 600 required for federatedWorkloadIdentity"
+- it: tests if federated workload identity expirationSeconds cannot be < 600
+  values:
+  - test-values.yaml
+  - test-fwi-values.yaml
+  set:
+    gcp.federatedWorkloadIdentity.tokenExpiration: 599
+  asserts:
+  - failedTemplate:
+      errorMessage: "tokenExpiration >= 600 required for federatedWorkloadIdentity"
+- it: tests if federated workload identity expirationSeconds can be 600
+  values:
+  - test-values.yaml
+  - test-fwi-values.yaml
+  set:
+    gcp.federatedWorkloadIdentity.tokenExpiration: 600
+  asserts:
+  - notFailedTemplate:
+- it: tests if federated workload identity expirationSeconds is overridden properly
+  values:
+  - test-values.yaml
+  - test-fwi-values.yaml
+  set:
+    gcp.federatedWorkloadIdentity.tokenExpiration: 3601
+  asserts:
+  - isNotEmpty:
+      path: spec.volumes[?(@.name == "fwi-token")]
+  - equal:
+      path: spec.volumes[?(@.name == "fwi-token")].projected.sources[0].serviceAccountToken.expirationSeconds
+      value: 3601
+- it: tests if volumes and mounts are created when federated workload identity is enabled
+  values:
+  - test-values.yaml
+  - test-fwi-values.yaml
+  asserts:
+  - isSubset:
+      path: spec.volumes[?(@.name == "fwi-token")]
+      content:
+        projected:
+          sources:
+          - serviceAccountToken:
+              audience: "this can be literally any value"
+              expirationSeconds: 3600
+              path: "baz"
+  - isSubset:
+      path: spec.containers[?(@.name == "apigee-hybrid-helm-guardrail-container")].volumeMounts[?(@.name == "fwi-token")]
+      content:
+        mountPath: "/foo/bar"
+        readOnly: true

@@ -1,0 +1,10 @@
+org: bar
+
+instanceID: unittest
+
+gcp:
+  region: us-west1
+
+pubsubDataPipeline:
+  mint: true
+

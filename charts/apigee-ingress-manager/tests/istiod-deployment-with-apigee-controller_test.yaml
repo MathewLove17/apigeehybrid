@@ -1,0 +1,236 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: istiod-deployment-with-apigee-controller-test
+release:
+  name: test-release
+
+tests:
+- it: istiod-deployment-with-apigee-controller.yaml defaults
+  template: istiod-deployment-with-apigee-controller.yaml
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: Deployment
+  - isAPIVersion:
+      of: apps/v1
+  - isNotEmpty:
+      path: metadata.labels["revision"]
+  - isNotEmpty:
+      path: spec.template.metadata.labels["revision"]
+  - isNull:
+      path: spec.template.spec.imagePullSecrets
+  - isSubset:
+      path: spec.template.spec.affinity
+      content:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: "cloud.google.com/gke-nodepool"
+                operator: In
+                values:
+                - "apigee-runtime"
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: "cloud.google.com/gke-nodepool"
+                operator: In
+                values:
+                - "apigee-runtime"
+  - isNull:
+      path: spec.template.spec.tolerations
+  - equal:
+      path: spec.template.spec.containers[?(@.name == "discovery")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.template.spec.containers[?(@.name == "discovery")]
+      content:
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 1024Mi
+          requests:
+            cpu: 200m
+            memory: 512Mi
+  - equal:
+      path: spec.template.spec.containers[?(@.name == "manager")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.template.spec.containers[?(@.name == "manager")]
+      content:
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 1024Mi
+          requests:
+            cpu: 400m
+            memory: 512Mi
+  - equal:
+      path: spec.template.spec.containers[?(@.name == "kube-rbac-proxy")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.template.spec.containers[?(@.name == "kube-rbac-proxy")]
+      content:
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 5m
+            memory: 64Mi
+  - isSubset:
+      path: spec.template.spec
+      content:
+        securityContext:
+          runAsNonRoot: true
+          runAsGroup: 998
+          runAsUser: 999
+          seccompProfile:
+            type: RuntimeDefault
+- it: istiod-deployment-with-apigee-controller.yaml hub
+  template: istiod-deployment-with-apigee-controller.yaml
+  set:
+    hub: unittest-gcr.img.com
+  asserts:
+  - matchRegex:
+      path: spec.template.spec.containers[?(@.name == "discovery")].image
+      pattern: ^unittest-gcr.img.com/apigee-asm-istiod:?
+  - matchRegex:
+      path: spec.template.spec.containers[?(@.name == "manager")].image
+      pattern: ^unittest-gcr.img.com/apigee-operators:?
+  - matchRegex:
+      path: spec.template.spec.containers[?(@.name == "kube-rbac-proxy")].image
+      pattern: ^unittest-gcr.img.com/apigee-kube-rbac-proxy:?
+- it: deployment spec should not have requiredDuringSchedulingIgnoredDuringExecution if requiredForScheduling is false
+  template: istiod-deployment-with-apigee-controller.yaml
+  set:
+    nodeSelector:
+      requiredForScheduling: false
+  asserts:
+  - notExists:
+      path: spec.template.spec.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+- it: deployment with global toleration
+  template: istiod-deployment-with-apigee-controller.yaml
+  set:
+    tolerations:
+    - key: "key1"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoExecute"
+      tolerationSeconds: 20
+  asserts:
+  - isNotNull:
+      path: spec.template.spec.tolerations
+- it: deployment with component specific toleration
+  template: istiod-deployment-with-apigee-controller.yaml
+  set:
+    istiod:
+      tolerations:
+      - key: "key1"
+        operator: "Equal"
+        value: "value1"
+        effect: "NoExecute"
+        tolerationSeconds: 20
+  asserts:
+  - isNotNull:
+      path: spec.template.spec.tolerations
+- it: deployment should have a component specific tolerations even if global is provided
+  template: istiod-deployment-with-apigee-controller.yaml
+  set:
+    tolerations:
+    - key: "global"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    - key: "global2"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    istiod:
+      tolerations:
+      - key: "component"
+        operator: "Equal"
+        value: "istiod"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.template.spec.tolerations
+  - lengthEqual:
+      path: spec.template.spec.tolerations
+      count: 1
+  - isSubset:
+      path: spec.template.spec
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "istiod"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec.template.spec
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+- it: check security context with org seccomp profile
+  template: istiod-deployment-with-apigee-controller.yaml
+  set:
+    securityContext:
+      seccompProfile:
+        type: Unconfined
+  asserts:
+  - equal:
+      path: spec.template.spec.securityContext.seccompProfile.type
+      value: Unconfined
+- it: check the priority of component seccomp profile and the org seccomp profile
+  template: istiod-deployment-with-apigee-controller.yaml
+  set:
+    securityContext:
+      seccompProfile:
+        type: Unconfined
+    ao:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+  asserts:
+  - equal:
+      path: spec.template.spec.securityContext.seccompProfile.type
+      value: RuntimeDefault
+- it: check the default value of the ingressgateway manager
+  template: istiod-deployment-with-apigee-controller.yaml
+  asserts:
+  - equal:
+      path: spec.template.spec.securityContext.seccompProfile.type
+      value: RuntimeDefault
+- it: should fail if the seccomp profile is not among RuntimeDefault, Localhost and Unconfined.
+  template: istiod-deployment-with-apigee-controller.yaml
+  set:
+    securityContext:
+      seccompProfile:
+        type: Default
+  asserts:
+  - failedTemplate:
+      errorMessage: "The seccomp profile type value should be empty or among RuntimeDefault, Unconfined, Localhost."
+- it: should fail if the seccomp localhostProfile is not empty but the type is not Localhost
+  template: istiod-deployment-with-apigee-controller.yaml
+  set:
+    securityContext:
+      seccompProfile:
+        type: RuntimeDefault
+        localhostProfile: /foo/bar
+  asserts:
+  - failedTemplate:
+      errorMessage: "The localhostProfile should be empty if the seccomp profile type is not Localhost."
+- it: should fail if the seccomp localhostProfile is empty but the type is Localhost
+  template: istiod-deployment-with-apigee-controller.yaml
+  set:
+    securityContext:
+      seccompProfile:
+        type: Localhost
+  asserts:
+  - failedTemplate:
+      errorMessage: "The localhostProfile can't be empty if the seccomp profile type is Localhost."

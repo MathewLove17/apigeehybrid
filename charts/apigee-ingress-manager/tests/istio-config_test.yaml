@@ -1,0 +1,38 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: istio-config-test
+templates:
+- istio-config.yaml
+release:
+  name: test-release
+
+tests:
+- it: apigee istio mesh config defaults
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: ConfigMap
+  - isAPIVersion:
+      of: v1
+  - matchRegex:
+      path: data["mesh"]
+      pattern: accessLogFile:\s/dev/stdout
+  - matchRegex:
+      path: data["mesh"]
+      pattern: accessLogFormat
+  - notMatchRegex:
+      path: data["mesh"]
+      pattern: forwardClientCertDetails:\sSANITIZE
+- it: apigee istio mesh config with gateway topology
+  set:
+    istiod.forwardClientCertDetails: SANITIZE
+  asserts:
+  - matchRegex:
+      path: data["mesh"]
+      pattern: forwardClientCertDetails:\sSANITIZE
+- it: default terminationDrainDuration value
+  asserts:
+  - matchRegex:
+      path: data["mesh"]
+      pattern: terminationDrainDuration:\s300s

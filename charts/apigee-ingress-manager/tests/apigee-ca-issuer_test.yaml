@@ -1,0 +1,17 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: apigee-ca-issuer-test
+templates:
+- apigee-ca-issuer.yaml
+release:
+  name: test-release
+
+tests:
+- it: apigee-ca-issuer should not be null
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: Issuer
+  - isAPIVersion:
+      of: cert-manager.io/v1

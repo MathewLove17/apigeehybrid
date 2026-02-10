@@ -1,0 +1,174 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: apigee-ingress-manager-guardrails-test
+templates:
+- apigee-ingress-manager-guardrails.yaml
+release:
+  name: test-release
+
+tests:
+- it: pod spec should not have requiredDuringSchedulingIgnoredDuringExecution if requiredForScheduling is false
+  set:
+    nodeSelector:
+      requiredForScheduling: false
+  asserts:
+  - notExists:
+      path: spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+- it: guardrails pod should not have toleration by default
+  asserts:
+  - isNull:
+      path: spec.tolerations
+- it: guardrails pod with global toleration
+  set:
+    tolerations:
+    - key: "key1"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoExecute"
+      tolerationSeconds: 20
+  asserts:
+  - isNotNull:
+      path: spec.tolerations
+- it: guardrail with component specific toleration
+  set:
+    guardrails:
+      tolerations:
+      - key: "key1"
+        operator: "Equal"
+        value: "value1"
+        effect: "NoExecute"
+        tolerationSeconds: 20
+  asserts:
+  - isNotNull:
+      path: spec.tolerations
+- it: guardrails should have a component specific tolerations even if global is provided
+  set:
+    tolerations:
+    - key: "global"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    - key: "global2"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    guardrails:
+      tolerations:
+      - key: "component"
+        operator: "Equal"
+        value: "guardrails"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.tolerations
+  - lengthEqual:
+      path: spec.tolerations
+      count: 1
+  - isSubset:
+      path: spec
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "guardrails"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+- it: pod spec should have 1 document without no-hooks flag
+  asserts:
+  - hasDocuments:
+      count: 1
+- it: guardrails config should not be empty
+  asserts:
+  - isKind:
+      of: Pod
+  - isAPIVersion:
+      of: v1
+  - equal:
+      path: metadata.name
+      value: apigee-hybrid-helm-guardrail-ingress-manager
+- it: guardrails label should be present
+  asserts:
+  - equal:
+      path: metadata.labels.app
+      value: apigee-hybrid-helm-guardrail
+- it: guardrails container name should be present
+  asserts:
+  - isNotNull:
+      path: spec.containers[?(@.name == "apigee-hybrid-helm-guardrail-container")].env[?(@.name == "COMPONENT")]
+- it: guardrails container should have endpoint set
+  asserts:
+  - isNotNull:
+      path: spec.containers[?(@.name == "apigee-hybrid-helm-guardrail-container")].env[?(@.name == "APIGEE_ENDPOINT")]
+- it: guardrails pod should never restart
+  asserts:
+  - equal:
+      path: spec.restartPolicy
+      value: Never
+- it: check security context with component seccomp profile
+  set:
+    guardrails:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+  asserts:
+  - equal:
+      path: spec.securityContext.seccompProfile.type
+      value: RuntimeDefault
+- it: check security context with org seccomp profile
+  set:
+    securityContext:
+      seccompProfile:
+        type: RuntimeDefault
+  asserts:
+  - equal:
+      path: spec.securityContext.seccompProfile.type
+      value: RuntimeDefault
+- it: check the priority between component and org security context
+  set:
+    securityContext:
+      seccompProfile:
+        type: RuntimeDefault
+    guardrails:
+      securityContext:
+        seccompProfile:
+          type: Localhost
+          localhostProfile: /foo/bar
+  asserts:
+  - equal:
+      path: spec.securityContext.seccompProfile.type
+      value: Localhost
+- it: should fail if the seccomp profile is not among RuntimeDefault, Localhost and Unconfined.
+  set:
+    guardrails:
+      securityContext:
+        seccompProfile:
+          type: Default
+  asserts:
+  - failedTemplate:
+      errorMessage: "The seccomp profile type value should be empty or among RuntimeDefault, Unconfined, Localhost."
+- it: should fail if the seccomp localhostProfile is not empty but the type is not Localhost
+  set:
+    guardrails:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+          localhostProfile: /foo/bar
+  asserts:
+  - failedTemplate:
+      errorMessage: "The localhostProfile should be empty if the seccomp profile type is not Localhost."
+- it: should fail if the seccomp localhostProfile is empty but the type is Localhost
+  set:
+    guardrails:
+      securityContext:
+        seccompProfile:
+          type: Localhost
+  asserts:
+  - failedTemplate:
+      errorMessage: "The localhostProfile can't be empty if the seccomp profile type is Localhost."

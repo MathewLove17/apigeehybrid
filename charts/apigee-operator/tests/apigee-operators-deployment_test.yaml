@@ -1,0 +1,87 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: apigee-operators-deployment-test
+templates:
+- apigee-operators-deployment.yaml
+release:
+  name: test-release
+  namespace: test-namespace
+
+tests:
+- it: should contain a deployment
+  asserts:
+  - isKind:
+      of: Deployment
+  - isAPIVersion:
+      of: apps/v1
+  - equal:
+      path: metadata.name
+      value: apigee-controller-manager
+  - equal:
+      path: metadata.namespace
+      value: test-namespace
+- it: should not contain proxyChainingIngressSvcDNS arg when not provided
+  asserts:
+  - notContains:
+      path: spec.template.spec.containers[?(@.name == "manager")].args
+      content: --proxy-chaining-ingress-svc-dns=
+  - notContains:
+      path: spec.template.spec.containers[?(@.name == "manager")].args
+      content: --proxy-chaining-ingress-svc-dns=test.com
+- it: should contain proxyChainingIngressSvcDNS arg when provided
+  set:
+    org: test-org
+    ao:
+      args:
+        proxyChainingIngressSvcDNS: test.com
+  asserts:
+  - contains:
+      path: spec.template.spec.containers[?(@.name == "manager")].args
+      content: --proxy-chaining-ingress-svc-dns=test.com
+- it: check security context with org seccomp profile
+  set:
+    securityContext:
+      seccompProfile:
+        type: RuntimeDefault
+  asserts:
+  - equal:
+      path: spec.template.spec.securityContext.seccompProfile.type
+      value: RuntimeDefault
+- it: check whether the component seccompProfile overrides the org seccompProfile
+  set:
+    securityContext:
+      seccompProfile:
+        type: RuntimeDefault
+    ao:
+      securityContext:
+        seccompProfile:
+          type: Unconfined
+  asserts:
+  - equal:
+      path: spec.template.spec.securityContext.seccompProfile.type
+      value: Unconfined
+- it: should fail if the seccomp profile is not among RuntimeDefault, Localhost and Unconfined.
+  set:
+    securityContext:
+      seccompProfile:
+        type: Default
+  asserts:
+  - failedTemplate:
+      errorMessage: "The seccomp profile type value should be empty or among RuntimeDefault, Unconfined, Localhost."
+- it: should fail if the seccomp localhostProfile is not empty but the type is not Localhost
+  set:
+    securityContext:
+      seccompProfile:
+        type: RuntimeDefault
+        localhostProfile: /foo/bar
+  asserts:
+  - failedTemplate:
+      errorMessage: "The localhostProfile should be empty if the seccomp profile type is not Localhost."
+- it: should fail if the seccomp localhostProfile is empty but the type is Localhost
+  set:
+    securityContext:
+      seccompProfile:
+        type: Localhost
+  asserts:
+  - failedTemplate:
+      errorMessage: "The localhostProfile can't be empty if the seccomp profile type is Localhost."

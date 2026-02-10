@@ -1,0 +1,124 @@
+suite: apigee-resources.yaml
+templates:
+- apigee-resources.yaml
+kubernetesProvider:
+  scheme:
+    "v1/Secret":
+      gvr:
+        version: "v1"
+        resource: "secrets"
+      namespaced: true
+tests:
+- it: "fresh install with default values creates Certificate and 2 ClusterIssuers"
+  asserts:
+  - hasDocuments:
+      count: 3
+  - containsDocument:
+      kind: Certificate
+      apiVersion: cert-manager.io/v1
+      name: apigee-ca
+      namespace: cert-manager
+      any: true
+  - containsDocument:
+      kind: ClusterIssuer
+      apiVersion: cert-manager.io/v1
+      name: apigee-root-certificate-issuer
+      any: true
+  - containsDocument:
+      kind: ClusterIssuer
+      apiVersion: cert-manager.io/v1
+      name: apigee-ca-issuer
+      any: true
+- it: "fresh install with default values sets apigee-ca rotationPolicy to Never"
+  documentSelector:
+    path: metadata.name
+    value: apigee-ca
+  asserts:
+  - equal:
+      path: spec.privateKey.rotationPolicy
+      value: "Never"
+- it: "fresh install with certManagerCAIssuerEnabled creates Certificate and 2 Issuers"
+  set:
+    ao:
+      certManagerCAIssuerEnabled: true
+  asserts:
+  - hasDocuments:
+      count: 3
+  - containsDocument:
+      kind: Certificate
+      apiVersion: cert-manager.io/v1
+      name: apigee-ca
+      namespace: cert-manager
+      any: true
+  - containsDocument:
+      kind: Issuer
+      apiVersion: cert-manager.io/v1
+      name: apigee-root-certificate-issuer
+      namespace: cert-manager
+      any: true
+  - containsDocument:
+      kind: Issuer
+      apiVersion: cert-manager.io/v1
+      name: apigee-ca-issuer
+      namespace: cert-manager
+      any: true
+- it: "fresh install with certManagerCAIssuerEnabled sets apigee-ca rotationPolicy to Never"
+  set:
+    ao:
+      certManagerCAIssuerEnabled: true
+  documentSelector:
+    path: metadata.name
+    value: apigee-ca
+  asserts:
+  - equal:
+      path: spec.privateKey.rotationPolicy
+      value: "Never"
+- it: "upgrade with default values only creates the apigee-ca-issuer ClusterIssuer"
+  kubernetesProvider:
+    objects:
+    - kind: Secret
+      apiVersion: "v1"
+      metadata:
+        name: apigee-ca
+        namespace: cert-manager
+  asserts:
+  - hasDocuments:
+      count: 1
+  - containsDocument:
+      kind: ClusterIssuer
+      apiVersion: cert-manager.io/v1
+      name: apigee-ca-issuer
+      any: true
+- it: "upgrade with certManagerCAIssuerEnabled only creates the apigee-ca-issuer Issuer"
+  set:
+    ao:
+      certManagerCAIssuerEnabled: true
+  kubernetesProvider:
+    objects:
+    - kind: Secret
+      apiVersion: "v1"
+      metadata:
+        name: apigee-ca
+        namespace: cert-manager
+  asserts:
+  - hasDocuments:
+      count: 1
+  - containsDocument:
+      kind: Issuer
+      apiVersion: cert-manager.io/v1
+      name: apigee-ca-issuer
+      namespace: cert-manager
+      any: true
+- it: "fresh install with custom namespace creates resources in that namespace"
+  set:
+    certManager:
+      namespace: new-namespace
+  asserts:
+  - hasDocuments:
+      count: 3
+  - containsDocument:
+      kind: Certificate
+      apiVersion: cert-manager.io/v1
+      name: apigee-ca
+      namespace: new-namespace
+      any: true

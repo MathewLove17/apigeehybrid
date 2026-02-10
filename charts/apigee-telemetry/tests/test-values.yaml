@@ -1,0 +1,14 @@
+org: foo-unit-test
+
+instanceID: unittest
+
+gcp:
+  projectID: testing-project
+k8sCluster:
+  name: unittest
+  region: unittest-region
+metrics.serviceAccountPath: test-file.txt
+
+logger:
+  enabled: false
+  serviceAccountPath: test-file.txt

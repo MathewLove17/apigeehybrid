@@ -1,0 +1,16 @@
+org: bar
+
+env: foo
+
+gcp:
+  region: us-west1
+
+newDataPipeline:
+  debugSession: true
+
+envs:
+  - name: "foo"
+    serviceAccountPaths:
+      runtime: test-file.txt
+      udca: test-file.txt
+      synchronizer: test-file.txt

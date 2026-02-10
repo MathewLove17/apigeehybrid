@@ -1,0 +1,120 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: istiod-envoyfilters-test
+templates:
+- istiod-envoyfilters.yaml
+release:
+  name: test-release
+
+tests:
+- it: istiod envoyfilter defaults
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: ConfigMap
+  - isAPIVersion:
+      of: v1
+  - matchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "if user_agent ~= nil and \\(\\s+ user_agent:sub\\(1, 8\\) == \"GoogleHC\""
+  - matchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "user_agent == \"Edge Health Probe\""
+  - matchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "user_agent == \"GoogleStackdriverMonitoring-UptimeChecks\\(https://cloud.google.com/monitoring\\)\""
+  - notMatchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "user_agent == \"other1\""
+  - notMatchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "user_agent == \"other2\""
+  - matchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "if p == \"/healthz/ingress\" then"
+- it: envoyfilter no user agent
+  set:
+    namespace: apigee
+    istiod:
+      healthCheckUserAgents: []
+  asserts:
+  - notMatchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "if user_agent ~= nil and \\(\\s+ user_agent:sub\\(1, 8\\) == \"GoogleHC\""
+  - notMatchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "user_agent == \"Edge Health Probe\""
+  - notMatchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "user_agent == \"GoogleStackdriverMonitoring-UptimeChecks\\(https://cloud.google.com/monitoring\\)\""
+  - notMatchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "user_agent == \"other1\""
+  - notMatchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "user_agent == \"other2\""
+  - matchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "if p == \"/healthz/ingress\" then"
+- it: envoyfilter custom user agents
+  set:
+    namespace: apigee
+    istiod:
+      healthCheckUserAgents:
+      - "other1"
+      - "other2"
+  asserts:
+  - matchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "if user_agent ~= nil and \\(\\s+ user_agent:sub\\(1, 8\\) == \"GoogleHC\""
+  - notMatchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "user_agent == \"Edge Health Probe\""
+  - notMatchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "user_agent == \"GoogleStackdriverMonitoring-UptimeChecks\\(https://cloud.google.com/monitoring\\)\""
+  - matchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "user_agent == \"other1\""
+  - matchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "user_agent == \"other2\""
+  - matchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "if p == \"/healthz/ingress\" then"
+- it: envoyfilter does not set NETWORK_FILTER max_headers_count by default.
+  set:
+    namespace: apigee
+  asserts:
+  - notMatchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "max_headers_count"
+  - notMatchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "common_http_protocol_options:"
+- it: envoyfilter sets NETWORK_FILTER max_headers_count when istiod.maxRequestHeaders is set.
+  set:
+    namespace: apigee
+    istiod:
+      maxRequestHeaders: 200
+  asserts:
+  - matchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "common_http_protocol_options:\n[[:blank:]]+max_headers_count: 200"
+- it: envoyfilter does not set CLUSTER max_headers_count by default
+  set:
+    namespace: apigee
+  asserts:
+  - notMatchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "'@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions\n[[:blank:]]+common_http_protocol_options:\n[[:blank:]]+max_headers_count: 200"
+- it: envoyfilter updates sets CLUSTER max_headers_count when istiod.maxResponseHeaders is set.
+  set:
+    namespace: apigee
+    istiod:
+      maxResponseHeaders: 200
+  asserts:
+  - matchRegex:
+      path: $.data['envoyfilters.yaml']
+      pattern: "'@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions\n[[:blank:]]+common_http_protocol_options:\n[[:blank:]]+max_headers_count: 200"

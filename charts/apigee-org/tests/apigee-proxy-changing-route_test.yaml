@@ -1,0 +1,113 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: apigee-proxy-chaining-route-test
+templates:
+- apigee-proxy-chaining-route.yaml
+release:
+  name: test-release
+
+tests:
+- it: should not have route when proxy limits is not enhanced
+  set:
+    org: test-org
+  asserts:
+  - hasDocuments:
+      count: 0
+- it: should have route pointing to chaining gateway when proxy limits is enhanced
+  set:
+    enhanceProxyLimits: true
+    org: test-org
+  asserts:
+  - isKind:
+      of: ApigeeRoute
+  - isAPIVersion:
+      of: apigee.cloud.google.com/v1alpha2
+  - equal:
+      path: metadata.name
+      value: apigee-ingressgateway-internal-chaining-test-org-c137659
+  - equal:
+      path: spec.enableNonSniClient
+      value: true
+  - equal:
+      path: spec.hostnames[0]
+      value: "*"
+  - equal:
+      path: spec.ports[0].tls.credentialName
+      value: apigee-ingressgateway-internal-chaining-test-org-c137659
+  - equal:
+      path: spec.ports[0].tls.minProtocolVersion
+      value: TLSV1_2
+  - isNull:
+      path: spec.ports[0].tls.maxTLSProtocolVersion
+  - equal:
+      path: spec.ports[0].tls.mode
+      value: SIMPLE
+  - isNull:
+      path: spec.tls.cipherSuites 
+  - equal:
+      path: spec.selector.ingress_name
+      value: internal-chaining
+- it: should have been fully overridden when proxy limits is enhanced
+  set:
+    enhanceProxyLimits: true
+    org: test-org
+    namespace: foo
+    apigeeChainingGateway:
+      name: internal-chain
+      minTLSProtocolVersion: TLSV1_3
+      maxTLSProtocolVersion: TLSV1_3
+      tlsMode: MUTUAL
+      cipherSuites:
+      - "ECDHE-ECDSA-AES128-GCM-SHA256"
+      - "ECDHE-RSA-AES128-GCM-SHA256"
+      - "ECDHE-ECDSA-AES256-GCM-SHA384"
+      - "ECDHE-RSA-AES256-GCM-SHA384"
+      - "ECDHE-ECDSA-CHACHA20-POLY1305"
+      - "ECDHE-RSA-CHACHA20-POLY1305"
+      - "ECDHE-ECDSA-AES128-SHA"
+      - "ECDHE-RSA-AES128-SHA"
+      - "ECDHE-ECDSA-AES256-SHA"
+      - "ECDHE-RSA-AES256-SHA"
+  asserts:
+  - isKind:
+      of: ApigeeRoute
+  - isAPIVersion:
+      of: apigee.cloud.google.com/v1alpha2
+  - equal:
+      path: metadata.name
+      value: apigee-ingressgateway-internal-chain-test-org-c137659
+  - equal:
+      path: spec.enableNonSniClient
+      value: true
+  - equal:
+      path: spec.hostnames[0]
+      value: "*"
+  - equal:
+      path: spec.ports[0].tls.credentialName
+      value: apigee-ingressgateway-internal-chain-test-org-c137659
+  - equal:
+      path: spec.ports[0].tls.minProtocolVersion
+      value: TLSV1_3
+  - equal:
+      path: spec.ports[0].tls.maxProtocolVersion
+      value: TLSV1_3
+  - equal:
+      path: spec.ports[0].tls.mode
+      value: MUTUAL
+  - isSubset:
+      path: spec.ports[0].tls
+      content:
+        cipherSuites:
+        - "ECDHE-ECDSA-AES128-GCM-SHA256"
+        - "ECDHE-RSA-AES128-GCM-SHA256"
+        - "ECDHE-ECDSA-AES256-GCM-SHA384"
+        - "ECDHE-RSA-AES256-GCM-SHA384"
+        - "ECDHE-ECDSA-CHACHA20-POLY1305"
+        - "ECDHE-RSA-CHACHA20-POLY1305"
+        - "ECDHE-ECDSA-AES128-SHA"
+        - "ECDHE-RSA-AES128-SHA"
+        - "ECDHE-ECDSA-AES256-SHA"
+        - "ECDHE-RSA-AES256-SHA"
+  - equal:
+      path: spec.selector.ingress_name
+      value: internal-chain

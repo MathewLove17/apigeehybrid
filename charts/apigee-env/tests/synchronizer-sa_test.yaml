@@ -1,0 +1,40 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: synchronizer-sa-test
+templates:
+- synchronizer-sa.yaml
+release:
+  name: test-release
+
+tests:
+- it: synchronizer sa is null by default
+  set:
+    org: bar
+    env: foo
+    envs:
+    - name: "foo"
+      serviceAccountPaths:
+        runtime: test-file.txt
+        udca: test-file.txt
+        synchronizer: test-file.txt
+  asserts:
+  - hasDocuments:
+      count: 0
+- it: synchronizer sa is not null when gke wi is enabled
+  set:
+    org: bar
+    env: foo
+    envs:
+    - name: "foo"
+      serviceAccountPaths:
+        runtime: test-file.txt
+        udca: test-file.txt
+        synchronizer: test-file.txt
+    gcp.workloadIdentity.enabled: true
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: ServiceAccount
+  - isAPIVersion:
+      of: v1

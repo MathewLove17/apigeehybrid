@@ -1,0 +1,6 @@
+org: unittest
+
+virtualhosts:
+  - name: test-egroup
+    sslCertPath: "test-file.txt"
+    sslKeyPath: "test-file.txt"

@@ -1,0 +1,114 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: apigee-logger-sa-test
+templates:
+- apigee-logger-sa.yaml
+- apigee-logger-gsa-secret.yaml
+release:
+  name: test-release
+
+tests:
+- it: logger sa should be null as it is disabled by default
+  set:
+    org: foo-unit-test
+    metrics.enabled: false
+  template: apigee-logger-sa.yaml
+  asserts:
+  - hasDocuments:
+      count: 0
+- it: logger sa should be null when logger is enabled w/o gke wi
+  set:
+    org: foo-unit-test
+    metrics.enabled: false
+    logger:
+      enabled: true
+      serviceAccountPath: test-file.txt
+  template: apigee-logger-sa.yaml
+  asserts:
+  - hasDocuments:
+      count: 0
+- it: logger sa should be not null when logger and gke wi are both enabled
+  set:
+    org: foo-unit-test
+    gcp.workloadIdentity.enabled: true
+    metrics.enabled: false
+    logger:
+      enabled: true
+  template: apigee-logger-sa.yaml
+  asserts:
+  - hasDocuments:
+      count: 1
+- it: global gke wi gsa
+  set:
+    org: foo-unit-test
+    gcp:
+      workloadIdentity:
+        enabled: true
+        gsa: global@unittest.iam.google.com
+    metrics.enabled: false
+    logger:
+      enabled: true
+  template: apigee-logger-sa.yaml
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: ServiceAccount
+  - isAPIVersion:
+      of: v1
+  - equal:
+      path: metadata.name
+      value: apigee-logger-apigee-telemetry
+  - equal:
+      path: metadata.annotations["iam.gke.io/gcp-service-account"]
+      value: global@unittest.iam.google.com
+- it: global gke wi gsa with org appended when multiOrg is true
+  set:
+    org: foo-unit-test
+    multiOrgCluster: true
+    gcp:
+      workloadIdentity:
+        enabled: true
+        gsa: global@unittest.iam.google.com
+    metrics.enabled: false
+    logger:
+      enabled: true
+  template: apigee-logger-sa.yaml
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: ServiceAccount
+  - isAPIVersion:
+      of: v1
+  - equal:
+      path: metadata.name
+      value: apigee-logger-foo-unit-test-51b1d1f-sa
+  - equal:
+      path: metadata.annotations["iam.gke.io/gcp-service-account"]
+      value: global@unittest.iam.google.com
+- it: dedicated gke wi gsa
+  set:
+    org: foo-unit-test
+    gcp:
+      workloadIdentity:
+        enabled: true
+        gsa: global@unittest.iam.google.com
+    metrics.enabled: false
+    logger:
+      enabled: true
+      gsa: logger-wi@unittest.iam.google.com
+  template: apigee-logger-sa.yaml
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: ServiceAccount
+  - isAPIVersion:
+      of: v1
+  - equal:
+      path: metadata.name
+      value: apigee-logger-apigee-telemetry
+  - equal:
+      path: metadata.annotations["iam.gke.io/gcp-service-account"]
+      value: logger-wi@unittest.iam.google.com

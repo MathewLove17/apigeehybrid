@@ -1,0 +1,1273 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: apigee-telemetry-test
+templates:
+- apigee-telemetry.yaml
+release:
+  name: test-release
+
+tests:
+- it: has multi org enabled
+  set:
+    multiOrgCluster: true
+    org: foo-unit-test
+    instanceID: unittest
+    gcp:
+      projectID: testing-project
+    k8sCluster:
+      name: unittest
+      region: unittest-region
+    metrics:
+      collector:
+        envVars:
+          NO_PROXY: 'logging.googleapis.com'
+          HTTP_PROXY: 'http://2.2.2.2:80'
+          HTTPS_PROXY: 'https://1.1.1.1:443'
+    logger:
+      enabled: true
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: ApigeeTelemetry
+  - isAPIVersion:
+      of: apigee.cloud.google.com/v1alpha2
+  - equal:
+      path: metadata.name
+      value: foo-unit-test-51b1d1f
+  - equal:
+      path: spec.components.metricsAdapter.podServiceAccountName
+      value: apigee-metrics-adapter
+  - equal:
+      path: spec.components.metricsProxy.appServiceAccountSecretName
+      value: apigee-metrics-foo-unit-test-51b1d1f-svc-account
+  - equal:
+      path: spec.components.metricsApp.appServiceAccountSecretName
+      value: apigee-metrics-foo-unit-test-51b1d1f-svc-account
+  - equal:
+      path: spec.components.collector.appServiceAccountSecretName
+      value: apigee-metrics-foo-unit-test-51b1d1f-svc-account
+  - equal:
+      path: spec.components.containerLogs.appServiceAccountSecretName
+      value: apigee-logger-foo-unit-test-51b1d1f-svc-account
+  - isNull:
+      path: spec.components.metricsProxy.podServiceAccountName
+  - isNull:
+      path: spec.components.metricsApp.podServiceAccountName
+  - isNull:
+      path: spec.components.collector.podServiceAccountName
+  - isNull:
+      path: spec.components.containerLogs.podServiceAccountName
+- it: has multi org enabled with workload identity
+  set:
+    multiOrgCluster: true
+    org: foo-unit-test
+    instanceID: unittest
+    gcp:
+      workloadIdentity:
+        enabled: true
+      projectID: testing-project
+    k8sCluster:
+      name: unittest
+      region: unittest-region
+    metrics:
+      collector:
+        envVars:
+          NO_PROXY: 'logging.googleapis.com'
+          HTTP_PROXY: 'http://2.2.2.2:80'
+          HTTPS_PROXY: 'https://1.1.1.1:443'
+    logger:
+      enabled: true
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: ApigeeTelemetry
+  - isAPIVersion:
+      of: apigee.cloud.google.com/v1alpha2
+  - equal:
+      path: metadata.name
+      value: foo-unit-test-51b1d1f
+  - equal:
+      path: spec.components.metricsAdapter.podServiceAccountName
+      value: apigee-metrics-adapter
+  - isNull:
+      path: spec.components.metricsProxy.appServiceAccountSecretName
+  - isNull:
+      path: spec.components.metricsApp.appServiceAccountSecretName
+  - isNull:
+      path: spec.components.collector.appServiceAccountSecretName
+  - isNull:
+      path: spec.components.containerLogs.appServiceAccountSecretName
+  - equal:
+      path: spec.components.metricsProxy.podServiceAccountName
+      value: apigee-metrics-foo-unit-test-51b1d1f-sa
+  - equal:
+      path: spec.components.metricsApp.podServiceAccountName
+      value: apigee-metrics-foo-unit-test-51b1d1f-sa
+  - equal:
+      path: spec.components.collector.podServiceAccountName
+      value: apigee-metrics-foo-unit-test-51b1d1f-sa
+  - equal:
+      path: spec.components.containerLogs.podServiceAccountName
+      value: apigee-logger-foo-unit-test-51b1d1f-sa
+- it: metrics should be not null as metrics is enabled by default
+  values:
+    - test-values.yaml
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: ApigeeTelemetry
+  - isAPIVersion:
+      of: apigee.cloud.google.com/v1alpha2
+  - equal:
+      path: metadata.name
+      value: apigee-telemetry
+  - equal:
+      path: spec.clusterName
+      value: unittest
+  - equal:
+      path: spec.clusterRegion
+      value: unittest-region
+  - equal:
+      path: spec.gcpProjectID
+      value: testing-project
+  - isNull:
+      path: spec.httpForwardProxy
+  - equal:
+      path: spec.customAutoscaling.enabled
+      value: true
+  - equal:
+      path: spec.metricsExport.enabled
+      value: true
+  - equal:
+      path: spec.metricsExport.defaultMetricsProjectID
+      value: testing-project
+  - equal:
+      path: spec.metricsExport.collectorProjectID
+      value: testing-project
+  - equal:
+      path: spec.metricsExport.appMetricsProjectID
+      value: testing-project
+  - equal:
+      path: spec.metricsExport.proxyMetricsProjectID
+      value: testing-project
+  - equal:
+      path: spec.metricsExport.stackdriverAPIEndpoint
+      value: https://monitoring.googleapis.com:443/
+  - equal:
+      path: spec.metricsExport.serviceConfigName
+      value: apigee.googleapis.com
+  - equal:
+      path: spec.metricsExport.disablePrometheusPipeline
+      value: true
+  - equal:
+      path: spec.containerLogsExport.enabled
+      value: false
+  - equal:
+      path: spec.containerLogsExport.projectID
+      value: testing-project
+  - isNotNull:
+      path: spec.components.metricsApp
+  - equal:
+      path: spec.components.metricsApp.appServiceAccountSecretName
+      value: apigee-metrics-svc-account
+  - isNull:
+      path: spec.components.metricsApp.tolerations
+  - isNotNull:
+      path: spec.components.metricsApp.version
+  - isNotNull:
+      path: spec.components.metricsApp.containers[?(@.name == "apigee-prometheus-app")]
+  - equal:
+      path: spec.components.metricsApp.containers[?(@.name == "apigee-prometheus-app")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.components.metricsApp.containers[?(@.name == "apigee-prometheus-app")].resources
+      content:
+        limits:
+          cpu: 500m
+          memory: 1Gi
+        requests:
+          cpu: 128m
+          memory: 512Mi
+  - isSubset:
+      path: spec.components.metricsApp.containers[?(@.name == "apigee-prometheus-app")].readinessProbe
+      content:
+        periodSeconds: 5
+        failureThreshold: 120
+        timeoutSeconds: 3
+        httpGet:
+          path: /-/ready
+          port: 9090
+  - isSubset:
+      path: spec.components.metricsApp.containers[?(@.name == "apigee-prometheus-app")].livenessProbe
+      content:
+        periodSeconds: 5
+        failureThreshold: 6
+        timeoutSeconds: 3
+        httpGet:
+          path: /-/healthy
+          port: 9090
+  - isNotNull:
+      path: spec.components.metricsApp.containers[?(@.name == "apigee-stackdriver-exporter")]
+  - equal:
+      path: spec.components.metricsApp.containers[?(@.name == "apigee-stackdriver-exporter")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.components.metricsApp.containers[?(@.name == "apigee-stackdriver-exporter")].resources
+      content:
+        limits:
+          cpu: 500m
+          memory: 1Gi
+        requests:
+          cpu: 128m
+          memory: 512Mi
+  - isNotNull:
+      path: spec.components.metricsProxy
+  - equal:
+      path: spec.components.metricsProxy.appServiceAccountSecretName
+      value: apigee-metrics-svc-account
+  - isNull:
+      path: spec.components.metricsProxy.tolerations
+  - isNotNull:
+      path: spec.components.metricsProxy.version
+  - isNotNull:
+      path: spec.components.metricsProxy.containers[?(@.name == "apigee-stackdriver-exporter")]
+  - equal:
+      path: spec.components.metricsProxy.containers[?(@.name == "apigee-stackdriver-exporter")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.components.metricsProxy.containers[?(@.name == "apigee-stackdriver-exporter")].resources
+      content:
+        limits:
+          cpu: 500m
+          memory: 1Gi
+        requests:
+          cpu: 128m
+          memory: 512Mi
+  - isNotNull:
+      path: spec.components.metricsProxy.containers[?(@.name == "apigee-prometheus-proxy")]
+  - equal:
+      path: spec.components.metricsProxy.containers[?(@.name == "apigee-prometheus-proxy")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.components.metricsProxy.containers[?(@.name == "apigee-prometheus-proxy")].resources
+      content:
+        limits:
+          cpu: 500m
+          memory: 1Gi
+        requests:
+          cpu: 128m
+          memory: 512Mi
+  - isNotNull:
+      path: spec.components.metricsProxy.containers[?(@.name == "apigee-prometheus-agg")]
+  - equal:
+      path: spec.components.metricsProxy.containers[?(@.name == "apigee-prometheus-agg")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.components.metricsProxy.containers[?(@.name == "apigee-prometheus-agg")].resources
+      content:
+        limits:
+          cpu: 500m
+          memory: 3Gi
+        requests:
+          cpu: 500m
+          memory: 512Mi
+  - isNotNull:
+      path: spec.components.metricsAdapter
+  - isNull:
+      path: spec.components.metricsAdapter.tolerations
+  - isNotNull:
+      path: spec.components.metricsAdapter.version
+  - isNull:
+      path: spec.components.metricsAdapter.hostNetwork
+  - isNull:
+      path: spec.components.metricsAdapter.dnsPolicy
+  - equal:
+      path: spec.components.metricsAdapter.podServiceAccountName
+      value: apigee-metrics-adapter
+  - isNotNull:
+      path: spec.components.metricsAdapter.containers[?(@.name == "apigee-prometheus-adapter")]
+  - equal:
+      path: spec.components.metricsAdapter.containers[?(@.name == "apigee-prometheus-adapter")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.components.metricsAdapter.containers[?(@.name == "apigee-prometheus-adapter")].resources
+      content:
+        limits:
+          cpu: 500m
+          memory: 4Gi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+  - isSubset:
+      path: spec.components.metricsAdapter.containers[?(@.name == "apigee-prometheus-adapter")].readinessProbe
+      content:
+        httpGet:
+          path: /healthz
+          port: 6443
+          scheme: HTTPS
+        failureThreshold: 10
+        periodSeconds: 5
+        timeoutSeconds: 3
+  - isSubset:
+      path: spec.components.metricsAdapter.containers[?(@.name == "apigee-prometheus-adapter")].livenessProbe
+      content:
+        periodSeconds: 10
+        failureThreshold: 5
+        timeoutSeconds: 5
+        httpGet:
+          scheme: HTTPS
+          path: /healthz
+          port: 6443
+  - isNotNull:
+      path: spec.components.collector
+  - equal:
+      path: spec.components.collector.appServiceAccountSecretName
+      value: apigee-metrics-svc-account
+  - isNull:
+      path: spec.components.collector.tolerations
+  - isNotNull:
+      path: spec.components.collector.version
+  - isNotNull:
+      path: spec.components.collector.containers[?(@.name == "apigee-open-telemetry-collector")]
+  - equal:
+      path: spec.components.collector.containers[?(@.name == "apigee-open-telemetry-collector")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.components.collector.containers[?(@.name == "apigee-open-telemetry-collector")].resources
+      content:
+        limits:
+          cpu: 500m
+          memory: 2Gi
+        requests:
+          cpu: 2m
+          memory: 512Mi
+  - isNotNull:
+      path: spec.components.collector.configOverride
+  - equal:
+      path: spec.components.collector.configOverride["enable-prom-var-syntax-v2"]
+      value: "true"
+  - isSubset:
+      path: spec.components.collector.containers[?(@.name == "apigee-open-telemetry-collector")].readinessProbe
+      content:
+        httpGet:
+          path: /
+          port: 13133
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        timeoutSeconds: 5
+        successThreshold: 1
+        failureThreshold: 3
+  - isSubset:
+      path: spec.components.collector.containers[?(@.name == "apigee-open-telemetry-collector")].livenessProbe
+      content:
+        httpGet:
+          path: /
+          port: 13133
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        timeoutSeconds: 5
+        successThreshold: 1
+        failureThreshold: 5
+  - isNull:
+      path: spec.components.containerLogs
+- it: collector env vars should be overridden for http proxy
+  set:
+    org: foo-unit-test
+    instanceID: unittest
+    gcp:
+      projectID: testing-project
+    k8sCluster:
+      name: unittest
+      region: unittest-region
+    metrics:
+      collector:
+        envVars:
+          NO_PROXY: 'logging.googleapis.com'
+          HTTP_PROXY: 'http://2.2.2.2:80'
+          HTTPS_PROXY: 'https://1.1.1.1:443'
+  asserts:
+  - equal:
+      path: spec.components.collector.containers[?(@.name == "apigee-open-telemetry-collector")].env
+      value:
+        - name: HTTPS_PROXY
+          value: https://1.1.1.1:443
+        - name: HTTP_PROXY
+          value: http://2.2.2.2:80
+        - name: NO_PROXY
+          value: logging.googleapis.com
+- it: secretProviderClass should be passed
+  set:
+    org: foo-unit-test
+    gcp:
+      projectID: testing-project
+    k8sCluster:
+      name: unittest
+      region: unittest-region
+    logger:
+      enabled: true
+    serviceAccountSecretProviderClass: test-spc
+  asserts:
+  - equal:
+      path: spec.components.collector.appServiceAccountSecretProviderClass
+      value: test-spc
+  - equal:
+      path: spec.components.containerLogs.appServiceAccountSecretProviderClass
+      value: test-spc
+  - equal:
+      path: spec.components.metricsApp.appServiceAccountSecretProviderClass
+      value: test-spc
+  - equal:
+      path: spec.components.metricsProxy.appServiceAccountSecretProviderClass
+      value: test-spc
+- it: container log enabled
+  values:
+    - test-values.yaml
+  set:
+    logger:
+      enabled: true
+  asserts:
+  - isNotNull:
+    path: spec.components.containerLogs
+  - equal:
+      path: spec.components.containerLogs.appServiceAccountSecretName
+      value: apigee-logger-svc-account
+  - isNull:
+      path: spec.components.containerLogs.tolerations
+  - isNotNull:
+      path: spec.components.containerLogs.version
+  - isNotNull:
+      path: spec.components.containerLogs.containers[?(@.name == "apigee-logger")]
+  - equal:
+      path: spec.components.containerLogs.containers[?(@.name == "apigee-logger")].imagePullPolicy
+      value: IfNotPresent
+  - isNull:
+      path: spec.components.containerLogs.containers[?(@.name == "apigee-logger")].env
+  - isSubset:
+      path: spec.components.containerLogs.containers[?(@.name == "apigee-logger")].resources
+      content:
+        limits:
+          cpu: 200m
+          memory: 500Mi
+        requests:
+          cpu: 100m
+          memory: 250Mi
+  - isNotNull:
+      path: spec.components.containerLogs.configOverride
+  - equal:
+      path: spec.components.containerLogs.configOverride["storage_max_chunks"]
+      value: "128"
+  - equal:
+      path: spec.components.containerLogs.configOverride["buffer_chunk_size"]
+      value: "256k"
+  - equal:
+      path: spec.components.containerLogs.configOverride["buffer_max_size"]
+      value: "104857600"
+  - equal:
+      path: spec.components.containerLogs.configOverride["buffer_memory_limit"]
+      value: "150MB"
+  - equal:
+      path: spec.components.containerLogs.configOverride["flush"]
+      value: "1"
+  - equal:
+      path: spec.components.containerLogs.configOverride["workers"]
+      value: "1"
+  - isNull:
+      path: spec.components.containerLogs.containers[?(@.name == "apigee-logger")].readinessProbe
+  - isSubset:
+      path: spec.components.containerLogs.containers[?(@.name == "apigee-logger")].livenessProbe
+      content:
+        failureThreshold: 3
+        initialDelaySeconds: 0
+        periodSeconds: 60
+        successThreshold: 1
+        timeoutSeconds: 1
+- it: logger overrides is defined
+  values:
+    - test-values.yaml
+  set:
+    logger:
+      enabled: true
+      storageMaxChunks: 256
+      bufferChunkSize: 512k
+      bufferMaxSize: 24MB
+      bufferMemoryLimit: 300MB
+      flushInterval: 5
+      workers: 2
+  asserts:
+  - equal:
+      path: spec.components.containerLogs.configOverride["storage_max_chunks"]
+      value: "256"
+  - equal:
+      path: spec.components.containerLogs.configOverride["buffer_chunk_size"]
+      value: "512k"
+  - equal:
+      path: spec.components.containerLogs.configOverride["buffer_max_size"]
+      value: "24MB"
+  - equal:
+      path: spec.components.containerLogs.configOverride["buffer_memory_limit"]
+      value: "300MB"
+  - equal:
+      path: spec.components.containerLogs.configOverride["flush"]
+      value: "5"
+  - equal:
+      path: spec.components.containerLogs.configOverride["workers"]
+      value: "2"
+- it: when image hub is defined
+  values:
+    - test-values.yaml
+  set:
+    hub: unittest-gcr.img.com
+    logger:
+      enabled: true
+  asserts:
+  - matchRegex:
+      path: spec.components.metricsApp.containers[?(@.name == "apigee-prometheus-app")].image
+      pattern: ^unittest-gcr.img.com/apigee-prom-prometheus:?
+  - matchRegex:
+      path: spec.components.metricsApp.containers[?(@.name == "apigee-stackdriver-exporter")].image
+      pattern: ^unittest-gcr.img.com/apigee-stackdriver-prometheus-sidecar:?
+  - matchRegex:
+      path: spec.components.metricsProxy.containers[?(@.name == "apigee-stackdriver-exporter")].image
+      pattern: ^unittest-gcr.img.com/apigee-stackdriver-prometheus-sidecar:?
+  - matchRegex:
+      path: spec.components.metricsProxy.containers[?(@.name == "apigee-prometheus-proxy")].image
+      pattern: ^unittest-gcr.img.com/apigee-prom-prometheus:?
+  - matchRegex:
+      path: spec.components.metricsProxy.containers[?(@.name == "apigee-prometheus-agg")].image
+      pattern: ^unittest-gcr.img.com/apigee-prom-prometheus:?
+  - matchRegex:
+      path: spec.components.metricsAdapter.containers[?(@.name == "apigee-prometheus-adapter")].image
+      pattern: ^unittest-gcr.img.com/apigee-prometheus-adapter:?
+  - matchRegex:
+      path: spec.components.containerLogs.containers[?(@.name == "apigee-logger")].image
+      pattern: ^unittest-gcr.img.com/apigee-fluent-bit:?
+- it: when http forward proxy is configured
+  values:
+    - test-values.yaml
+  set:
+    httpProxy:
+      host: telemetry-http-forward-proxy.com
+      port: 23456
+      scheme: HTTP
+  asserts:
+  - isNotNull:
+      path: spec.httpForwardProxy
+  - isSubset:
+      path: spec.httpForwardProxy
+      content:
+        host: telemetry-http-forward-proxy.com
+        port: 23456
+        scheme: HTTP
+- it: when http forward proxy is configured with username and password
+  values:
+    - test-values.yaml
+  set:
+    httpProxy:
+      host: telemetry-http-forward-proxy.com
+      port: 23456
+      scheme: HTTP
+      username: telemetry-username
+      password: telemetry-password
+  asserts:
+  - isNotNull:
+      path: spec.httpForwardProxy
+  - isSubset:
+      path: spec.httpForwardProxy
+      content:
+        host: telemetry-http-forward-proxy.com
+        port: 23456
+        scheme: HTTP
+        username: telemetry-username
+        password: telemetry-password
+- it: template should fail if file not found
+  values:
+    - test-values.yaml
+  set:
+    metrics.serviceAccountPath: missing-file.txt
+  asserts:
+    - failedTemplate:
+        errorMessage: "'missing-file.txt' is either an empty file or unreachable"
+- it: template should fail if file is empty
+  values:
+    - test-values.yaml
+  set:
+    metrics.serviceAccountPath: test-empty-file.txt
+  asserts:
+    - failedTemplate:
+        errorMessage: "'test-empty-file.txt' is either an empty file or unreachable"
+- it: test that gcp.workloadIdentity and gcp.federatedWorkloadIdentity cannot both be enabled
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  set:
+    gcp:
+      workloadIdentity:
+        enabled: true
+  asserts:
+    - failedTemplate:
+        errorMessage: "gcp.workloadIdentity.enabled must be false to use federated workload identity"
+- it: tests if federated workload identity expirationSeconds cannot be 0
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  set:
+    gcp:
+      federatedWorkloadIdentity:
+        tokenExpiration: 0
+  asserts:
+    - failedTemplate:
+        errorMessage: "tokenExpiration >= 600 required for federatedWorkloadIdentity"
+- it: tests if federated workload identity expirationSeconds cannot be < 600
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  set:
+    gcp:
+      federatedWorkloadIdentity:
+        tokenExpiration: 599
+  asserts:
+    - failedTemplate:
+        errorMessage: "tokenExpiration >= 600 required for federatedWorkloadIdentity"
+- it: tests if federated workload identity expirationSeconds can be 600
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  set:
+    gcp:
+      federatedWorkloadIdentity:
+        tokenExpiration: 600
+  asserts:
+    - notFailedTemplate:
+- it: tests if federated workload identity expirationSeconds is overridden properly
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  set:
+    gcp:
+      federatedWorkloadIdentity:
+        tokenExpiration: 3601
+  asserts:
+    - isNotEmpty:
+        path: spec.components.collector.volumes[?(@.name == "fwi-token")]
+    - equal:
+        path: spec.components.collector.volumes[?(@.name == "fwi-token")].projected.sources[0].serviceAccountToken.expirationSeconds
+        value: 3601
+- it: tests if volumes and mounts are created when federated workload identity is enabled
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  set:
+    logger:
+      enabled: true
+  asserts:
+    - isSubset:
+        path: spec.components.collector.volumes[?(@.name == "fwi-token")]
+        content:
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: "this can be literally any value"
+                  expirationSeconds: 3600
+                  path: "baz"
+    - isSubset:
+        path: spec.components.metricsApp.volumes[?(@.name == "fwi-token")]
+        content:
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: "this can be literally any value"
+                  expirationSeconds: 3600
+                  path: "baz"
+    - isSubset:
+        path: spec.components.metricsProxy.volumes[?(@.name == "fwi-token")]
+        content:
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: "this can be literally any value"
+                  expirationSeconds: 3600
+                  path: "baz"
+    - isSubset:
+        path: spec.components.metricsAdapter.volumes[?(@.name == "fwi-token")]
+        content:
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: "this can be literally any value"
+                  expirationSeconds: 3600
+                  path: "baz"
+    - isSubset:
+        path: spec.components.containerLogs.volumes[?(@.name == "fwi-token")]
+        content:
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: "this can be literally any value"
+                  expirationSeconds: 3600
+                  path: "baz"
+    - isSubset:
+        path: spec.components.collector.containers[?(@.name == "apigee-open-telemetry-collector")].volumeMounts[?(@.name == "fwi-token")]
+        content:
+          mountPath: "/foo/bar"
+          readOnly: true
+    - isSubset:
+        path: spec.components.metricsApp.containers[?(@.name == "apigee-prometheus-app")].volumeMounts[?(@.name == "fwi-token")]
+        content:
+          mountPath: "/foo/bar"
+          readOnly: true
+    - isSubset:
+        path: spec.components.metricsApp.containers[?(@.name == "apigee-stackdriver-exporter")].volumeMounts[?(@.name == "fwi-token")]
+        content:
+          mountPath: "/foo/bar"
+          readOnly: true
+        # At the time of writing, the fluentD container doesn't need the SA
+    - isSubset:
+        path: spec.components.metricsProxy.containers[?(@.name == "apigee-stackdriver-exporter")].volumeMounts[?(@.name == "fwi-token")]
+        content:
+          mountPath: "/foo/bar"
+          readOnly: true
+    - isSubset:
+        path: spec.components.metricsAdapter.containers[?(@.name == "apigee-prometheus-adapter")].volumeMounts[?(@.name == "fwi-token")]
+        content:
+          mountPath: "/foo/bar"
+          readOnly: true
+    - isSubset:
+        path: spec.components.containerLogs.containers[?(@.name == "apigee-logger")].volumeMounts[?(@.name == "fwi-token")]
+        content:
+          mountPath: "/foo/bar"
+          readOnly: true
+- it: all components spec should not have requiredDuringSchedulingIgnoredDuringExecution if requiredForScheduling is false
+  values:
+  - test-values.yaml
+  set:
+    nodeSelector:
+      requiredForScheduling: false
+  asserts:
+  - notExists:
+      path: spec.components.collector.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  - notExists:
+      path: spec.components.metricsApp.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  - notExists:
+      path: spec.components.metricsProxy.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  - notExists:
+      path: spec.components.metricsAdapter.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  - notExists:
+      path: spec.components.containerLogs.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+- it: metrics should have a global tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "key1"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.collector.tolerations
+  - lengthEqual:
+      path: spec.components.collector.tolerations
+      count: 1
+  - isNotEmpty:
+      path: spec.components.metricsApp.tolerations
+  - lengthEqual:
+      path: spec.components.metricsApp.tolerations
+      count: 1
+  - isNotEmpty:
+      path: spec.components.metricsProxy.tolerations
+  - lengthEqual:
+      path: spec.components.metricsProxy.tolerations
+      count: 1
+  - isNotEmpty:
+      path: spec.components.metricsAdapter.tolerations
+  - lengthEqual:
+      path: spec.components.metricsAdapter.tolerations
+      count: 1
+- it: metrics should have a component specific tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    metrics:
+      tolerations:
+      - key: "key1"
+        operator: "Equal"
+        value: "value1"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.collector.tolerations
+  - lengthEqual:
+      path: spec.components.collector.tolerations
+      count: 1
+  - isNotEmpty:
+      path: spec.components.metricsApp.tolerations
+  - lengthEqual:
+      path: spec.components.metricsApp.tolerations
+      count: 1
+  - isNotEmpty:
+      path: spec.components.metricsProxy.tolerations
+  - lengthEqual:
+      path: spec.components.metricsProxy.tolerations
+      count: 1
+  - isNotEmpty:
+      path: spec.components.metricsAdapter.tolerations
+  - lengthEqual:
+      path: spec.components.metricsAdapter.tolerations
+      count: 1
+- it: metrics should have a component specific tolerations even if global is provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "global"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    - key: "global2"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    metrics:
+      tolerations:
+      - key: "component"
+        operator: "Equal"
+        value: "metrics"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.collector.tolerations
+  - lengthEqual:
+      path: spec.components.collector.tolerations
+      count: 1
+  - isSubset:
+      path: spec.components.collector
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "metrics"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec.components.collector
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+  - isNotEmpty:
+      path: spec.components.metricsApp.tolerations
+  - lengthEqual:
+      path: spec.components.metricsApp.tolerations
+      count: 1
+  - isSubset:
+      path: spec.components.metricsApp
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "metrics"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec.components.metricsApp
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+  - isNotEmpty:
+      path: spec.components.metricsProxy.tolerations
+  - lengthEqual:
+      path: spec.components.metricsProxy.tolerations
+      count: 1
+  - isSubset:
+      path: spec.components.metricsProxy
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "metrics"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec.components.metricsProxy
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+  - isNotEmpty:
+      path: spec.components.metricsAdapter.tolerations
+  - lengthEqual:
+      path: spec.components.metricsAdapter.tolerations
+      count: 1
+  - isSubset:
+      path: spec.components.metricsAdapter
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "metrics"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec.components.metricsAdapter
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+- it: dnsPolicy should be ClusterFirstWithHostNet when host network is enabled for metrics
+  values:
+    - test-values.yaml
+  set:
+    metrics:
+      hostNetwork: true
+  asserts:
+  - equal:
+      path: spec.components.metricsAdapter.hostNetwork
+      value: true
+  - equal:
+      path: spec.components.metricsAdapter.dnsPolicy
+      value: ClusterFirstWithHostNet
+- it: has custom autoscaling enabled and metrics disabled
+  set:
+    org: foo-unit-test
+    instanceID: unittest
+    gcp:
+      projectID: testing-project
+    k8sCluster:
+      name: unittest
+      region: unittest-region
+    metrics:
+      enabled: false
+    customAutoscaling:
+      enabled: true
+  asserts:
+  - equal:
+      path: spec.metricsExport.enabled
+      value: false
+  - equal:
+      path: spec.customAutoscaling.enabled
+      value: true
+  - isNotNull:
+      path: spec.components.metricsAdapter
+  - isNotNull:
+      path: spec.components.metricsAdapter.version
+  - isNotNull:
+      path: spec.components.metricsApp
+  - isNotNull:
+      path: spec.components.metricsApp.version
+  - isNull:
+      path: spec.components.metricsProxy
+  - isNull:
+      path: spec.components.metricsProxy.version
+  - isNull:
+      path: spec.components.collector
+  - isNull:
+      path: spec.components.collector.version
+- it: has custom autoscaling set to false
+  set:
+    org: foo-unit-test
+    instanceID: unittest
+    gcp:
+      projectID: testing-project
+    k8sCluster:
+      name: unittest
+      region: unittest-region
+    customAutoscaling:
+      enabled: false
+  asserts:
+  - equal:
+      path: spec.metricsExport.enabled
+      value: true
+  - equal:
+      path: spec.customAutoscaling.enabled
+      value: false
+  - isNotNull:
+      path: spec.components.metricsAdapter
+  - isNotNull:
+      path: spec.components.metricsAdapter.version
+  - isNotNull:
+      path: spec.components.metricsApp
+  - isNotNull:
+      path: spec.components.metricsApp.version
+  - isNotNull:
+      path: spec.components.metricsProxy
+  - isNotNull:
+      path: spec.components.metricsProxy.version
+  - isNotNull:
+      path: spec.components.collector
+  - isNotNull:
+      path: spec.components.collector.version
+- it: check security context with component seccomp profile
+  set:
+    org: foo-unit-test
+    logger:
+      enabled: true
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+  asserts:
+  - equal:
+      path: spec.components.containerLogs.securityContext.seccompProfile.type
+      value: RuntimeDefault
+- it: check security context with org seccomp profile
+  set:
+    org: foo-unit-test
+    securityContext:
+      seccompProfile:
+        type: RuntimeDefault
+    metrics:
+      enabled: true
+    logger:
+      enabled: true
+  asserts:
+  - equal:
+      path: spec.components.containerLogs.securityContext.seccompProfile.type
+      value: RuntimeDefault
+  - equal:
+      path: spec.components.collector.securityContext.seccompProfile.type
+      value: RuntimeDefault
+  - equal:
+      path: spec.components.metricsProxy.securityContext.seccompProfile.type
+      value: RuntimeDefault
+  - equal:
+      path: spec.components.metricsApp.securityContext.seccompProfile.type
+      value: RuntimeDefault
+  - equal:
+      path: spec.components.metricsAdapter.securityContext.seccompProfile.type
+      value: RuntimeDefault
+  - equal:
+      path: spec.components.containerLogs.securityContext.seccompProfile.type
+      value: RuntimeDefault
+- it: check the priority between component and org security context
+  set:
+    org: foo-unit-test
+    securityContext:
+      seccompProfile:
+        type: RuntimeDefault
+    metrics:
+      enabled: true
+      collector:
+        securityContext:
+          seccompProfile:
+            type: Localhost
+            localhostProfile: /foo/bar
+  asserts:
+  - equal:
+      path: spec.components.collector.securityContext.seccompProfile.type
+      value: Localhost
+- it: should fail if the seccomp profile is not among RuntimeDefault, Localhost and Unconfined.
+  set:
+    org: foo-unit-test
+    logger:
+      enabled: true
+      securityContext:
+        seccompProfile:
+          type: Default
+  asserts:
+  - failedTemplate:
+      errorMessage: "The seccomp profile type value should be empty or among RuntimeDefault, Unconfined, Localhost."
+- it: should fail if the seccomp localhostProfile is not empty but the type is not Localhost
+  set:
+    org: foo-unit-test
+    metrics:
+      enabled: true
+      collector:
+        securityContext:
+          seccompProfile:
+            type: RuntimeDefault
+            localhostProfile: /foo/bar
+  asserts:
+  - failedTemplate:
+      errorMessage: "The localhostProfile should be empty if the seccomp profile type is not Localhost."
+- it: should fail if the seccomp localhostProfile is empty but the type is Localhost
+  set:
+    org: foo-unit-test
+    metrics:
+      enabled: true
+      collector:
+        securityContext:
+          seccompProfile:
+            type: Localhost
+  asserts:
+  - failedTemplate:
+      errorMessage: "The localhostProfile can't be empty if the seccomp profile type is Localhost."
+- it: propagates annotations to all components
+  set:
+    org: foo
+    metrics:
+      enabled: true
+      annotations:
+        a/b: c
+  documentSelector:
+    path: metadata.name
+    value: apigee-telemetry
+  asserts:
+  - isSubset:
+      path: spec.components.collector.annotations
+      content:
+        a/b: c
+  - isSubset:
+      path: spec.components.metricsProxy.annotations
+      content:
+        a/b: c
+  - isSubset:
+      path: spec.components.metricsApp.annotations
+      content:
+        a/b: c
+  - isSubset:
+      path: spec.components.metricsAdapter.annotations
+      content:
+        a/b: c
+- it: propagates collector annotations
+  set:
+    org: foo
+    metrics:
+      enabled: true
+      collector:
+        annotations:
+          a/b: c
+  documentSelector:
+    path: metadata.name
+    value: apigee-telemetry
+  asserts:
+  - isSubset:
+      path: spec.components.collector.annotations
+      content:
+        a/b: c
+- it: propagates proxy annotations
+  set:
+    org: foo
+    metrics:
+      enabled: true
+      proxyStackdriverExporter:
+        annotations:
+          a/b: c
+  documentSelector:
+    path: metadata.name
+    value: apigee-telemetry
+  asserts:
+  - isSubset:
+      path: spec.components.metricsProxy.annotations
+      content:
+        a/b: c
+- it: propagates app annotations
+  set:
+    org: foo
+    metrics:
+      enabled: true
+      appStackdriverExporter:
+        annotations:
+          a/b: c
+  documentSelector:
+    path: metadata.name
+    value: apigee-telemetry
+  asserts:
+  - isSubset:
+      path: spec.components.metricsApp.annotations
+      content:
+        a/b: c
+- it: propagates adapter annotations
+  set:
+    org: foo
+    metrics:
+      enabled: true
+      adapter:
+        annotations:
+          a/b: c
+  documentSelector:
+    path: metadata.name
+    value: apigee-telemetry
+  asserts:
+  - isSubset:
+      path: spec.components.metricsAdapter.annotations
+      content:
+        a/b: c
+- it: merges annotations from all components
+  set:
+    org: foo
+    metrics:
+      enabled: true
+      annotations:
+        all: all
+      collector:
+        annotations:
+          col: col
+      proxyStackdriverExporter:
+        annotations:
+          proxy: proxy
+      appStackdriverExporter:
+        annotations:
+          app: app
+      adapter:
+        annotations:
+          ada: ada
+  documentSelector:
+    path: metadata.name
+    value: apigee-telemetry
+  asserts:
+  - isSubset:
+      path: spec.components.collector.annotations
+      content:
+        all: all
+        col: col
+  - isSubset:
+      path: spec.components.metricsProxy.annotations
+      content:
+        all: all
+        proxy: proxy
+  - isSubset:
+      path: spec.components.metricsApp.annotations
+      content:
+        all: all
+        app: app
+  - isSubset:
+      path: spec.components.metricsAdapter.annotations
+      content:
+        all: all
+        ada: ada
+- it: component-specific annotations overwrite globals
+  set:
+    org: foo
+    metrics:
+      enabled: true
+      annotations:
+        base: value
+      collector:
+        annotations:
+          base: value2
+      proxyStackdriverExporter:
+        annotations:
+          base: value2
+      appStackdriverExporter:
+        annotations:
+          base: value2
+      adapter:
+        annotations:
+          base: value2
+  documentSelector:
+    path: metadata.name
+    value: apigee-telemetry
+  asserts:
+  - isSubset:
+      path: spec.components.collector.annotations
+      content:
+        base: value2
+  - isSubset:
+      path: spec.components.metricsProxy.annotations
+      content:
+        base: value2
+  - isSubset:
+      path: spec.components.metricsApp.annotations
+      content:
+        base: value2
+  - isSubset:
+      path: spec.components.metricsAdapter.annotations
+      content:
+        base: value2

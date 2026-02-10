@@ -1,0 +1,87 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: apigee-telemetry-notes.test
+templates:
+- NOTES.txt
+tests:
+- it: should pass the notes file with the metric enabled with gke wi
+  set:
+    org: foo-org
+    gcp:
+      projectID: testing-project
+      workloadIdentity:
+        enabled: true
+        gsa: global@unittest.iam.google.com
+    k8sCluster:
+      name: unittest
+      region: unittest-region
+    metrics.serviceAccountPath: test-file.txt
+  asserts:
+  - equalRaw:
+      value: |-
+        For GKE Workload Identity, please make sure to add the below membership to the IAM policy binding using the respective kubernetes SA (KSA).
+
+          Metrics KSA: apigee-metrics-sa
+          gcloud iam service-accounts add-iam-policy-binding global@unittest.iam.google.com \
+                --role roles/iam.workloadIdentityUser \
+                --member "serviceAccount:foo-org.svc.id.goog[apigee/apigee-metrics-sa]" \
+                --project foo-org
+- it: should pass the notes file with the metric and logger enabled with gke wi
+  set:
+    org: foo-org
+    gcp:
+      projectID: testing-project
+      workloadIdentity:
+        enabled: true
+        gsa: global@unittest.iam.google.com
+    k8sCluster:
+      name: unittest
+      region: unittest-region
+    metrics.serviceAccountPath: test-file.txt
+    logger:
+      enabled: true
+  asserts:
+  - equalRaw:
+      value: |-
+        For GKE Workload Identity, please make sure to add the below membership to the IAM policy binding using the respective kubernetes SA (KSA).
+          Logger KSA: apigee-logger-apigee-telemetry
+          gcloud iam service-accounts add-iam-policy-binding global@unittest.iam.google.com \
+                --role roles/iam.workloadIdentityUser \
+                --member "serviceAccount:foo-org.svc.id.goog[apigee/apigee-logger-apigee-telemetry]" \
+                --project foo-org
+
+          Metrics KSA: apigee-metrics-sa
+          gcloud iam service-accounts add-iam-policy-binding global@unittest.iam.google.com \
+                --role roles/iam.workloadIdentityUser \
+                --member "serviceAccount:foo-org.svc.id.goog[apigee/apigee-metrics-sa]" \
+                --project foo-org
+- it: should pass the notes file with the metric and logger enabled with gke wi with multiOrg set to true
+  set:
+    org: foo-org
+    multiOrgCluster: true
+    gcp:
+      projectID: testing-project
+      workloadIdentity:
+        enabled: true
+        gsa: global@unittest.iam.google.com
+    k8sCluster:
+      name: unittest
+      region: unittest-region
+    metrics.serviceAccountPath: test-file.txt
+    logger:
+      enabled: true
+  asserts:
+  - equalRaw:
+      value: |-
+        For GKE Workload Identity, please make sure to add the below membership to the IAM policy binding using the respective kubernetes SA (KSA).
+          Logger KSA: apigee-logger-foo-org-36cbc5d-sa
+          gcloud iam service-accounts add-iam-policy-binding global@unittest.iam.google.com \
+                --role roles/iam.workloadIdentityUser \
+                --member "serviceAccount:foo-org.svc.id.goog[apigee/apigee-logger-foo-org-36cbc5d-sa]" \
+                --project foo-org
+
+          Metrics KSA: apigee-metrics-foo-org-36cbc5d-sa
+          gcloud iam service-accounts add-iam-policy-binding global@unittest.iam.google.com \
+                --role roles/iam.workloadIdentityUser \
+                --member "serviceAccount:foo-org.svc.id.goog[apigee/apigee-metrics-foo-org-36cbc5d-sa]" \
+                --project foo-org

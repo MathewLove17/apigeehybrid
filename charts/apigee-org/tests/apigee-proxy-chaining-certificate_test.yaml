@@ -1,0 +1,77 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: apigee-proxy-chaining-certificate.yaml
+templates:
+- apigee-proxy-chaining-certificate.yaml
+release:
+  name: test-release
+
+tests:
+- it: should not have cert when proxy limits is not enhanced
+  set:
+    org: test-org
+  asserts:
+  - hasDocuments:
+      count: 0
+- it: should have cert when proxy limits is enhanced
+  set:
+    org: test-org
+    enhanceProxyLimits: true
+  asserts:
+  - isKind:
+      of: Certificate
+  - isAPIVersion:
+      of: cert-manager.io/v1
+  - equal:
+      path: metadata.name
+      value: apigee-ingressgateway-internal-chaining-test-org-c137659
+  - equal:
+      path: spec.commonName
+      value: test-org
+  - isSubset:
+      path: spec
+      content:
+        dnsNames:
+        - apigee-ingressgateway-internal-chaining-test-org-c137659
+        - apigee-ingressgateway-internal-chaining-test-org-c137659.NAMESPACE
+        - apigee-ingressgateway-internal-chaining-test-org-c137659.NAMESPACE.svc
+        - apigee-ingressgateway-internal-chaining-test-org-c137659.NAMESPACE.svc.cluster.local
+  - equal:
+      path: spec.secretName
+      value: apigee-ingressgateway-internal-chaining-test-org-c137659
+  - equal:
+      path: spec.issuerRef.kind
+      value: ClusterIssuer
+- it: should have cert overridden when proxy limits is enhanced
+  set:
+    org: test-foo
+    enhanceProxyLimits: true
+    apigeeChainingGateway:
+      name: internal-chain
+    ao:
+      certManagerCAIssuerEnabled: true
+  asserts:
+  - isKind:
+      of: Certificate
+  - isAPIVersion:
+      of: cert-manager.io/v1
+  - equal:
+      path: metadata.name
+      value: apigee-ingressgateway-internal-chain-test-foo-4b296f8
+  - equal:
+      path: spec.commonName
+      value: test-foo
+  - isSubset:
+      path: spec
+      content:
+        dnsNames:
+        - apigee-ingressgateway-internal-chain-test-foo-4b296f8
+        - apigee-ingressgateway-internal-chain-test-foo-4b296f8.NAMESPACE
+        - apigee-ingressgateway-internal-chain-test-foo-4b296f8.NAMESPACE.svc
+        - apigee-ingressgateway-internal-chain-test-foo-4b296f8.NAMESPACE.svc.cluster.local
+  - equal:
+      path: spec.secretName
+      value: apigee-ingressgateway-internal-chain-test-foo-4b296f8
+  - equal:
+      path: spec.issuerRef.kind
+      value: Issuer

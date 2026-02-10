@@ -1,0 +1,56 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: istiod-hpa-test
+templates:
+- istiod-hpa.yaml
+release:
+  name: test-release
+
+tests:
+- it: istiod hpa defaults
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: HorizontalPodAutoscaler
+  - isAPIVersion:
+      of: autoscaling/v2
+  - equal:
+      path: spec.maxReplicas
+      value: 10
+  - equal:
+      path: spec.minReplicas
+      value: 2
+  - isSubset:
+      path: spec
+      content:
+        metrics:
+        - type: Resource
+          resource:
+            name: cpu
+            target:
+              type: "Utilization"
+              averageUtilization: 75
+- it: istiod hpa overrides
+  set:
+    istiod:
+      replicaCountMax: 5
+      replicaCountMin: 4
+      targetCPUUtilizationPercentage: 89
+  asserts:
+  - equal:
+      path: spec.maxReplicas
+      value: 5
+  - equal:
+      path: spec.minReplicas
+      value: 4
+  - isSubset:
+      path: spec
+      content:
+        metrics:
+        - type: Resource
+          resource:
+            name: cpu
+            target:
+              type: "Utilization"
+              averageUtilization: 89

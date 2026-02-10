@@ -1,0 +1,5 @@
+gcp:
+  federatedWorkloadIdentity:
+    enabled: true
+    audience: "this can be literally any value"
+    credentialSourceFile: /foo/bar/baz

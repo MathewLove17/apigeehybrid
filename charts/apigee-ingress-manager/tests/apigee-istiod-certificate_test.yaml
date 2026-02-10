@@ -1,0 +1,23 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: apigee-istiod-certificate-test
+templates:
+- apigee-istiod-certificate.yaml
+release:
+  name: test-release
+
+tests:
+- it: apigee istiod cert should not be null
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: Certificate
+  - isAPIVersion:
+      of: cert-manager.io/v1
+  - equal:
+      path: spec.commonName
+      value: apigee-ingressgateway-manager.NAMESPACE.svc
+  - equal:
+      path: spec.dnsNames[0]
+      value: apigee-ingressgateway-manager.NAMESPACE.svc

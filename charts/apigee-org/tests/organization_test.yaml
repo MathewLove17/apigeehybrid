@@ -1,0 +1,2233 @@
+# below comment needs to be present to detect invalid test schema
+# yaml-language-server: $schema=https://raw.githubusercontent.com/quintush/helm-unittest/master/schema/helm-testsuite.json
+suite: organization-test
+templates:
+- organization.yaml
+release:
+  name: test-release
+
+tests:
+- it: organization checks
+  values:
+    - test-values.yaml
+  asserts:
+  - hasDocuments:
+      count: 1
+  - isKind:
+      of: ApigeeOrganization
+  - isAPIVersion:
+      of: apigee.cloud.google.com/v1alpha2
+  - equal:
+      path: metadata.name
+      value: foo-2c26b46
+  - isNull:
+      path: spec.imagePullSecrets
+  - equal:
+      path: spec.name
+      value: foo
+  - equal:
+      path: spec.datastoreRef
+      value: default
+  - equal:
+      path: spec.dataEncryptionRef
+      value: foo-2c26b46-data-encryption
+  - equal:
+      path: spec.redisRef
+      value: default
+  - equal:
+      path: spec.axHashingSaltRef
+      value: foo-2c26b46-ax-salt
+  - equal:
+      path: spec.apigeeEndpoint
+      value:  https://apigee.googleapis.com
+  - equal:
+      path: spec.apigeeConnectEndpoint
+      value:  apigeeconnect.googleapis.com:443
+  - equal:
+      path: spec.instanceID
+      value: unittest
+  - isNotEmpty:
+      path: spec.version
+  - equal:
+      path: spec.clusterName
+      value: unittest
+  - equal:
+      path: spec.clusterRegion
+      value: unittest-region
+  - equal:
+      path: spec.gcpProjectID
+      value: org-unit-test-id
+  - equal:
+      path: spec.udcaEnabled
+      value: true
+  - isNull:
+      path: spec.enabledCassandraSchemaSetup
+  - isNotNull:
+      path: spec.components.cassandraUserSetup
+  - isSubset:
+      path: spec.components.cassandraUserSetup.securityContext
+      content:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 998
+        privileged: true
+  - isSubset:
+      path: spec.components.cassandraUserSetup.nodeAffinity
+      content:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+  - isNull:
+      path: spec.components.cassandraUserSetup.tolerations
+  - isNull:
+      path: spec.components.cassandraUserSetup.annotations
+  - isNotEmpty:
+      path: spec.components.cassandraUserSetup.version
+  - isNotNull:
+      path: spec.components.cassandraUserSetup.initContainers[?(@.name == "apigee-cassandra-readiness")]
+  - equal:
+      path: spec.components.cassandraUserSetup.initContainers[?(@.name == "apigee-cassandra-readiness")].imagePullPolicy
+      value: IfNotPresent
+  - isNotNull:
+      path: spec.components.cassandraUserSetup.containers[?(@.name == "apigee-cassandra-user-setup")]
+  - equal:
+      path: spec.components.cassandraUserSetup.containers[?(@.name == "apigee-cassandra-user-setup")].imagePullPolicy
+      value: IfNotPresent
+  - isNotNull:
+      path: spec.components.cassandraSchemaSetup
+  - isSubset:
+      path: spec.components.cassandraSchemaSetup
+      content:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 999
+          runAsGroup: 998
+          privileged: false
+  - isSubset:
+      path: spec.components.cassandraSchemaSetup.nodeAffinity
+      content:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+  - isNull:
+      path: spec.components.cassandraSchemaSetup.tolerations
+  - isNull:
+      path: spec.components.cassandraSchemaSetup.annotations
+  - isNotEmpty:
+      path: spec.components.cassandraSchemaSetup.version
+  - isNotNull:
+      path: spec.components.cassandraSchemaSetup.initContainers[?(@.name == "apigee-cassandra-user-readiness")]
+  - equal:
+      path: spec.components.cassandraSchemaSetup.initContainers[?(@.name == "apigee-cassandra-user-readiness")].imagePullPolicy
+      value: IfNotPresent
+  - isNotNull:
+      path: spec.components.cassandraSchemaSetup.containers[?(@.name == "apigee-cassandra-schema-setup")]
+  - equal:
+      path: spec.components.cassandraSchemaSetup.containers[?(@.name == "apigee-cassandra-schema-setup")].imagePullPolicy
+      value: IfNotPresent
+  - isNotNull:
+      path: spec.components.connectAgent
+  - isNull:
+      path: spec.components.connectAgent.securityContext
+  - equal:
+      path: spec.components.connectAgent.appServiceAccountSecretName
+      value: apigee-connect-agent-foo-2c26b46-svc-account
+  - isSubset:
+      path: spec.components.connectAgent.nodeAffinity
+      content:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+  - isNull:
+      path: spec.components.connectAgent.tolerations
+  - isNotNull:
+      path: spec.components.connectAgent.annotations
+  - isNotEmpty:
+      path: spec.components.connectAgent.version
+  - equal:
+      path: spec.components.connectAgent.autoScaler.minReplicas
+      value: 1
+  - equal:
+      path: spec.components.connectAgent.autoScaler.maxReplicas
+      value: 1
+  - isSubset:
+      path: spec.components.connectAgent.autoScaler.metrics[?(@.type == "Resource")].resource
+      content:
+        name: cpu
+        target:
+          type: "Utilization"
+          averageUtilization: 75
+  - isNotNull:
+      path: spec.components.connectAgent.containers[?(@.name == "apigee-connect-agent")]
+  - equal:
+      path: spec.components.connectAgent.containers[?(@.name == "apigee-connect-agent")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.components.connectAgent.containers[?(@.name == "apigee-connect-agent")].resources
+      content:
+        requests:
+          cpu: 200m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+  - isSubset:
+      path: spec.components.connectAgent.containers[?(@.name == "apigee-connect-agent")]
+      content:
+        env:
+        - name: GRPC_GO_LOG_SEVERITY_LEVEL
+          value: ERROR
+        - name: LOG_VERBOSITY_LEVEL
+          value: "0"
+  - isNotNull:
+      path: spec.components.cassandraSchemaValidation
+  - isSubset:
+      path: spec.components.cassandraSchemaValidation
+      content:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 999
+          runAsGroup: 998
+          privileged: false
+  - isSubset:
+      path: spec.components.cassandraSchemaValidation.nodeAffinity
+      content:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+  - isNull:
+      path: spec.components.cassandraSchemaValidation.tolerations
+  - isNull:
+      path: spec.components.cassandraSchemaValidation.annotations
+  - isNotEmpty:
+      path: spec.components.cassandraSchemaValidation.version
+  - isNotNull:
+      path: spec.components.cassandraSchemaValidation.initContainers[?(@.name == "apigee-cassandra-user-readiness")]
+  - equal:
+      path: spec.components.cassandraSchemaValidation.initContainers[?(@.name == "apigee-cassandra-user-readiness")].imagePullPolicy
+      value: IfNotPresent
+  - isNotNull:
+      path: spec.components.cassandraSchemaValidation.containers[?(@.name == "apigee-cassandra-schema-val")]
+  - equal:
+      path: spec.components.cassandraSchemaValidation.containers[?(@.name == "apigee-cassandra-schema-val")].imagePullPolicy
+      value: IfNotPresent
+
+  - isNotNull:
+      path: spec.components.cassandraSchemaValidation
+  - isSubset:
+      path: spec.components.cassandraSchemaValidation
+      content:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 999
+          runAsGroup: 998
+          privileged: false
+  - isSubset:
+      path: spec.components.cassandraSchemaValidation.nodeAffinity
+      content:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+  - isNull:
+      path: spec.components.cassandraSchemaValidation.tolerations
+  - isNull:
+      path: spec.components.cassandraSchemaValidation.annotations
+  - isNotEmpty:
+      path: spec.components.cassandraSchemaValidation.version
+  - isNotNull:
+      path: spec.components.cassandraSchemaValidation.initContainers[?(@.name == "apigee-cassandra-user-readiness")]
+  - equal:
+      path: spec.components.cassandraSchemaValidation.initContainers[?(@.name == "apigee-cassandra-user-readiness")].imagePullPolicy
+      value: IfNotPresent
+  - isNotNull:
+      path: spec.components.cassandraSchemaValidation.containers[?(@.name == "apigee-cassandra-schema-val")]
+  - equal:
+      path: spec.components.cassandraSchemaValidation.containers[?(@.name == "apigee-cassandra-schema-val")].imagePullPolicy
+      value: IfNotPresent
+  - isNotNull:
+      path: spec.components.watcher
+  - isNull:
+      path: spec.components.watcher.securityContext
+  - equal:
+      path: spec.components.watcher.appServiceAccountSecretName
+      value: apigee-watcher-foo-2c26b46-svc-account
+  - isSubset:
+      path: spec.components.watcher.nodeAffinity
+      content:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+  - isNull:
+      path: spec.components.watcher.tolerations
+  - isNotNull:
+      path: spec.components.watcher.annotations
+  - isNotEmpty:
+      path: spec.components.watcher.version
+  - equal:
+      path: spec.components.watcher.autoScaler.minReplicas
+      value: 1
+  - equal:
+      path: spec.components.watcher.autoScaler.maxReplicas
+      value: 1
+  - isSubset:
+      path: spec.components.watcher.autoScaler.metrics[?(@.type == "Resource")].resource
+      content:
+        name: cpu
+        target:
+          type: "Utilization"
+          averageUtilization: 75
+  - isNotNull:
+      path: spec.components.watcher.containers[?(@.name == "apigee-watcher")]
+  - equal:
+      path: spec.components.watcher.containers[?(@.name == "apigee-watcher")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.components.watcher.containers[?(@.name == "apigee-watcher")].resources
+      content:
+        requests:
+          cpu: 200m
+          memory: 128Mi
+        limits:
+          cpu: 1000m
+          memory: 2Gi
+  - equal:
+      path: spec.components.watcher.containers[?(@.name == "apigee-watcher")].env[?(@.name == "ENABLE_ROUTE_SHARDING")]
+      value:
+        name: ENABLE_ROUTE_SHARDING
+        value: "true"
+  - equal:
+      path: spec.components.watcher.containers[?(@.name == "apigee-watcher")].env[?(@.name == "MAX_ROUTES_PER_SHARD")]
+      value:
+        name: MAX_ROUTES_PER_SHARD
+        value: "1000"
+  - equal:
+      path: spec.components.watcher.properties.enableIssueScanning
+      value: true
+  - equal:
+      path: spec.components.watcher.properties.issueScanInterval
+      value: 60
+  - equal:
+      path: spec.components.watcher.properties.enableBasepathMigration
+      value: true
+  - equal:
+      path: spec.components.watcher.properties.enableLeaderElect
+      value: true
+  - isNotNull:
+      path: spec.components.mart
+  - isSubset:
+      path: spec.components.mart
+      content:
+        securityContext:
+          privileged: false
+          runAsGroup: 998
+          runAsNonRoot: true
+          runAsUser: 999
+  - equal:
+      path: spec.components.mart.appServiceAccountSecretName
+      value: apigee-mart-foo-2c26b46-svc-account
+  - isSubset:
+      path: spec.components.mart.nodeAffinity
+      content:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+  - isNull:
+      path: spec.components.mart.tolerations
+  - isNotNull:
+      path: spec.components.mart.annotations
+  - isNotEmpty:
+      path: spec.components.mart.version
+  - equal:
+      path: spec.components.mart.autoScaler.minReplicas
+      value: 1
+  - equal:
+      path: spec.components.mart.autoScaler.maxReplicas
+      value: 5
+  - isSubset:
+      path: spec.components.mart.autoScaler.metrics[?(@.type == "Resource")].resource
+      content:
+        name: cpu
+        target:
+          type: "Utilization"
+          averageUtilization: 75
+  - isNotNull:
+      path: spec.components.mart.containers[?(@.name == "apigee-mart")]
+  - equal:
+      path: spec.components.mart.containers[?(@.name == "apigee-mart")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.components.mart.containers[?(@.name == "apigee-mart")]
+      content:
+        livenessProbe:
+          failureThreshold: 12
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 1
+          httpGet:
+            path: /v1/probes/live
+            port: 8843
+            scheme: HTTPS
+  - isSubset:
+      path: spec.components.mart.containers[?(@.name == "apigee-mart")]
+      content:
+        readinessProbe:
+          failureThreshold: 2
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 1
+          httpGet:
+            path: /v1/probes/ready
+            port: 8843
+            scheme: HTTPS
+  - isSubset:
+      path: spec.components.mart.containers[?(@.name == "apigee-mart")].resources
+      content:
+        requests:
+          cpu: 500m
+          memory: 512Mi
+        limits:
+          cpu: 2000m
+          memory: 5Gi
+  - isSubset:
+      path: spec.components.mart.containers[?(@.name == "apigee-mart")]
+      content:
+        env:
+        - name: FOO_KMS_ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              key: kmsEncryptionKey
+              name: foo-2c26b46-encryption-keys
+        - name: FOO_KVM_ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              key: kvmEncryptionKey
+              name: foo-2c26b46-encryption-keys
+  - isNotNull:
+      path: spec.components.mintTaskScheduler
+  - isSubset:
+      path: spec.components.mart
+      content:
+        securityContext:
+          privileged: false
+          runAsGroup: 998
+          runAsNonRoot: true
+          runAsUser: 999
+  - isSubset:
+      path: spec.components.mintTaskScheduler.nodeAffinity
+      content:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+  - isNull:
+      path: spec.components.mintTaskScheduler.tolerations
+  - isNull:
+      path: spec.components.mintTaskScheduler.annotations
+  - isNotEmpty:
+      path: spec.components.mintTaskScheduler.version
+  - isNotNull:
+      path: spec.components.mintTaskScheduler.initContainers[?(@.name == "apigee-cassandra-schema-readiness")]
+  - equal:
+      path: spec.components.mintTaskScheduler.initContainers[?(@.name == "apigee-cassandra-schema-readiness")].imagePullPolicy
+      value: IfNotPresent
+  - isNotNull:
+      path: spec.components.mintTaskScheduler.containers[?(@.name == "apigee-mint-task-scheduler")]
+  - equal:
+      path: spec.components.mintTaskScheduler.containers[?(@.name == "apigee-mint-task-scheduler")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.components.mintTaskScheduler.containers[?(@.name == "apigee-mint-task-scheduler")].resources
+      content:
+        requests:
+          cpu: 500m
+          memory: 512Mi
+        limits:
+          cpu: 2000m
+          memory: 4Gi
+  - isSubset:
+      path: spec.components.mintTaskScheduler.containers[?(@.name == "apigee-mint-task-scheduler")]
+      content:
+        env:
+        - name: FOO_KMS_ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              key: kmsEncryptionKey
+              name: foo-2c26b46-encryption-keys
+
+  - isNotNull:
+      path: spec.components.udca
+  - isSubset:
+      path: spec.components.udca
+      content:
+        securityContext:
+          privileged: false
+          runAsGroup: 998
+          runAsNonRoot: true
+          runAsUser: 999
+  - equal:
+      path: spec.components.udca.appServiceAccountSecretName
+      value: apigee-udca-foo-2c26b46-svc-account
+  - isSubset:
+      path: spec.components.udca.nodeAffinity
+      content:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+  - isNull:
+      path: spec.components.udca.tolerations
+  - isNotNull:
+      path: spec.components.udca.annotations
+  - isNotEmpty:
+      path: spec.components.udca.version
+  - equal:
+      path: spec.components.udca.autoScaler.minReplicas
+      value: 1
+  - equal:
+      path: spec.components.udca.autoScaler.maxReplicas
+      value: 4
+  - isSubset:
+      path: spec.components.udca.autoScaler.metrics[?(@.type == "Resource")].resource
+      content:
+        name: cpu
+        target:
+          type: "Utilization"
+          averageUtilization: 75
+  - isNotNull:
+      path: spec.components.udca.initContainers[?(@.name == "apigee-tls-readiness")]
+  - equal:
+      path: spec.components.udca.initContainers[?(@.name == "apigee-tls-readiness")].imagePullPolicy
+      value: IfNotPresent
+  - isNotNull:
+      path: spec.components.udca.containers[?(@.name == "apigee-udca")]
+  - equal:
+      path: spec.components.udca.containers[?(@.name == "apigee-udca")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.components.udca.containers[?(@.name == "apigee-udca")]
+      content:
+        livenessProbe:
+          failureThreshold: 2
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 1
+          httpGet:
+            path: /v1/probes/live
+            port: 7070
+            scheme: HTTPS
+  - isNull:
+      path: spec.components.udca.containers[?(@.name == "apigee-udca")].readinessProbe
+  - isSubset:
+      path: spec.components.udca.containers[?(@.name == "apigee-udca")].resources
+      content:
+        requests:
+          cpu: 250m
+          memory: 256Mi
+        limits:
+          cpu: 1000m
+          memory: 2Gi
+  - isSubset:
+      path: spec.components.mart.containers[?(@.name == "apigee-mart")]
+      content:
+        env:
+        - name: FOO_KMS_ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              key: kmsEncryptionKey
+              name: foo-2c26b46-encryption-keys
+        - name: FOO_KVM_ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              key: kvmEncryptionKey
+              name: foo-2c26b46-encryption-keys
+  - isNotEmpty:
+      path: spec.components.ingressGateways
+- it: when image hub is provided
+  values:
+    - test-values.yaml
+  set:
+    hub: unittest-gcr.img.com
+  asserts:
+  - matchRegex:
+      path: spec.components.cassandraUserSetup.initContainers[?(@.name == "apigee-cassandra-readiness")].image
+      pattern: ^unittest-gcr.img.com/apigee-hybrid-cassandra-client:?
+  - matchRegex:
+      path: spec.components.cassandraUserSetup.containers[?(@.name == "apigee-cassandra-user-setup")].image
+      pattern: ^unittest-gcr.img.com/apigee-hybrid-cassandra-client:?
+  - matchRegex:
+      path: spec.components.cassandraSchemaSetup.initContainers[?(@.name == "apigee-cassandra-user-readiness")].image
+      pattern: ^unittest-gcr.img.com/apigee-hybrid-cassandra-client:?
+  - matchRegex:
+      path: spec.components.cassandraSchemaSetup.containers[?(@.name == "apigee-cassandra-schema-setup")].image
+      pattern: ^unittest-gcr.img.com/apigee-mart-server:?
+  - matchRegex:
+      path: spec.components.connectAgent.containers[?(@.name == "apigee-connect-agent")].image
+      pattern: ^unittest-gcr.img.com/apigee-connect-agent:?
+  - matchRegex:
+      path: spec.components.cassandraSchemaValidation.containers[?(@.name == "apigee-cassandra-schema-val")].image
+      pattern: ^unittest-gcr.img.com/apigee-mart-server:?
+  - matchRegex:
+      path: spec.components.cassandraSchemaValidation.initContainers[?(@.name == "apigee-cassandra-user-readiness")].image
+      pattern: ^unittest-gcr.img.com/apigee-hybrid-cassandra-client:?
+  - matchRegex:
+      path: spec.components.cassandraSchemaValidation.containers[?(@.name == "apigee-cassandra-schema-val")].image
+      pattern: ^unittest-gcr.img.com/apigee-mart-server:?
+  - matchRegex:
+      path: spec.components.watcher.containers[?(@.name == "apigee-watcher")].image
+      pattern: ^unittest-gcr.img.com/apigee-watcher:?
+  - matchRegex:
+      path: spec.components.mart.containers[?(@.name == "apigee-mart")].image
+      pattern: ^unittest-gcr.img.com/apigee-mart-server:?
+  - matchRegex:
+      path: spec.components.mintTaskScheduler.initContainers[?(@.name == "apigee-cassandra-schema-readiness")].image
+      pattern: ^unittest-gcr.img.com/apigee-mart-server:?
+  - matchRegex:
+      path: spec.components.mintTaskScheduler.containers[?(@.name == "apigee-mint-task-scheduler")].image
+      pattern: ^unittest-gcr.img.com/apigee-mint-task-scheduler:?
+  - matchRegex:
+      path: spec.components.udca.initContainers[?(@.name == "apigee-tls-readiness")].image
+      pattern: ^unittest-gcr.img.com/apigee-udca:?
+  - matchRegex:
+      path: spec.components.udca.containers[?(@.name == "apigee-udca")].image
+      pattern: ^unittest-gcr.img.com/apigee-udca:?
+- it: when ingress gateway is provided
+  values:
+    - test-values.yaml
+  set:
+    ingressGateways:
+    - name: ingress-1 # maximum 17 characters. See Known issue 243167389.
+      replicaCountMin: 1
+      replicaCountMax: 2
+      svcType: LoadBalancer
+  asserts:
+  - isNotNull:
+      path: spec.components.ingressGateways
+  - isNotNull:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")]
+  - equal:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")].name
+      value: ingress-1
+  - isNotNull:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")].version
+  - isNull:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")].tolerations
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")]
+      content:
+        serviceSpec:
+          type: LoadBalancer
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")]
+      content:
+        securityContext:
+          privileged: false
+          runAsGroup: 998
+          runAsNonRoot: true
+          runAsUser: 999
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")].nodeAffinity
+      content:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")]
+      content:
+        autoScaler:
+          minReplicas: 1
+          maxReplicas: 2
+          metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target:
+                type: "Utilization"
+                averageUtilization: 75
+  - equal:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")].containers[?(@.name == "apigee-ingressgateway")].imagePullPolicy
+      value: IfNotPresent
+  - isNull:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")].containers[?(@.name == "apigee-ingressgateway")].resources
+- it: when ingress gateway is provided along with image hub
+  values:
+    - test-values.yaml
+  set:
+    ingressGateways:
+    - name: ingress-1 # maximum 17 characters. See Known issue 243167389.
+      replicaCountMin: 1
+      replicaCountMax: 2
+      svcType: LoadBalancer
+    hub: unittest-gcr.img.com
+  asserts:
+  - matchRegex:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")].containers[?(@.name == "apigee-ingressgateway")].image
+      pattern: ^unittest-gcr.img.com/apigee-asm-ingress:?
+- it: environment with pubsub data pipeline enabled
+  values:
+    - pubsub-pipeline-values.yaml
+  asserts:
+  ## config
+  - equal:
+      path: spec.config.analyticsTracePubSubEndpoint
+      value: us-west1-pubsub.googleapis.com
+  - equal:
+      path: spec.config.mintPubSubTopicName
+      value: "apigee-new-mint"
+  - equal:
+      path: spec.config.mintDataflowDisabled
+      value: true
+  - equal:
+      path: spec.config.mintPubSubEnabled
+      value: true
+- it: when http forward proxy is configured
+  values:
+      - test-values.yaml
+  set:
+    httpProxy:
+      host: org-http-forward-proxy.com
+      port: 23456
+      scheme: HTTP
+  asserts:
+  - isNotNull:
+      path: spec.httpForwardProxy
+  - isSubset:
+      path: spec.httpForwardProxy
+      content:
+        host: org-http-forward-proxy.com
+        port: 23456
+        scheme: HTTP
+- it: when http forward proxy is configured with username and password
+  values:
+    - test-values.yaml
+  set:
+    httpProxy:
+      host: org-http-forward-proxy.com
+      port: 23456
+      scheme: HTTP
+      username: org-username
+      password: org-password
+  asserts:
+  - isNotNull:
+      path: spec.httpForwardProxy
+  - isSubset:
+      path: spec.httpForwardProxy
+      content:
+        host: org-http-forward-proxy.com
+        password: org-password
+        port: 23456
+        scheme: HTTP
+        username: org-username
+- it: when org scoped udca flag is explicitly set false
+  values:
+    - test-values.yaml
+  set:
+    orgScopedUDCA: false
+  asserts:
+  - equal:
+      path: spec.udcaEnabled
+      value: false
+- it: when org scoped udca flag is explicitly set true
+  values:
+    - test-values.yaml
+  set:
+    orgScopedUDCA: true
+  asserts:
+  - equal:
+      path: spec.udcaEnabled
+      value: true
+- it: when federated WI is disabled (by default), the cprof agent profile cwc should be null
+  values:
+    - test-values.yaml
+  set:
+    orgScopedUDCA: true
+  asserts:
+  - isNull:
+      path: spec.components.mart.configOverride["bin_setenv_cprof_agent_profile"]
+- it: when federated WI is disabled explicitly, the cprof agent profile cwc should be null
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  set:
+    gcp:
+      federatedWorkloadIdentity:
+        enabled: false
+  asserts:
+  - isNull:
+      path: spec.components.mart.configOverride["bin_setenv_cprof_agent_profile"]
+- it: when federated WI is enabled, the cprof agent profile cwc should have an empty string
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  set:
+    orgScopedUDCA: true
+  asserts:
+  - equal:
+      path: spec.components.mart.configOverride["bin_setenv_cprof_agent_profile"]
+      value: ""
+- it: org passes GCP SA secret provider class when set
+  set:
+    org: test
+    instanceID: unittest
+    k8sCluster:
+      name: unittest
+      region: unittest-region
+    gcp.projectID: org-unit-test-id
+    serviceAccountSecretProviderClass: test-spc
+  asserts:
+  - equal:
+      path: spec.components.connectAgent.appServiceAccountSecretProviderClass
+      value: test-spc
+  - equal:
+      path: spec.components.watcher.appServiceAccountSecretProviderClass
+      value: test-spc
+  - equal:
+      path: spec.components.mart.appServiceAccountSecretProviderClass
+      value: test-spc
+  - equal:
+      path: spec.components.mintTaskScheduler.appServiceAccountSecretProviderClass
+      value: test-spc
+  - equal:
+      path: spec.components.udca.appServiceAccountSecretProviderClass
+      value: test-spc
+- it: org passes ax hash salt secret when set
+  set:
+    org: test
+    instanceID: unittest
+    k8sCluster:
+      name: unittest
+      region: unittest-region
+    gcp.projectID: org-unit-test-id
+    axHashSaltSecret: test-sec
+  asserts:
+  - equal:
+      path: spec.axHashingSaltRef
+      value: test-sec
+- it: org passes ax hash salt secret provider class when set
+  set:
+    org: test
+    instanceID: unittest
+    k8sCluster:
+      name: unittest
+      region: unittest-region
+    gcp.projectID: org-unit-test-id
+    axHashSaltSecretProviderClass: test-spc
+  asserts:
+  - equal:
+      path: spec.axHashingSaltSecretProviderClass
+      value: test-spc
+- it: test that gcp.workloadIdentity and gcp.federatedWorkloadIdentity cannot both be enabled
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  set:
+    gcp:
+      workloadIdentity:
+        enabled: true
+  asserts:
+    - failedTemplate:
+        errorMessage: "gcp.workloadIdentity.enabled must be false to use federated workload identity"
+- it: tests if federated workload identity expirationSeconds cannot be 0
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  set:
+    gcp:
+      federatedWorkloadIdentity:
+        tokenExpiration: 0
+  asserts:
+    - failedTemplate:
+        errorMessage: "tokenExpiration >= 600 required for federatedWorkloadIdentity"
+- it: tests if federated workload identity expirationSeconds cannot be < 600
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  set:
+    gcp:
+      federatedWorkloadIdentity:
+        tokenExpiration: 599
+  asserts:
+    - failedTemplate:
+        errorMessage: "tokenExpiration >= 600 required for federatedWorkloadIdentity"
+- it: tests if federated workload identity expirationSeconds can be 600
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  set:
+    gcp:
+      federatedWorkloadIdentity:
+        tokenExpiration: 600
+  asserts:
+    - notFailedTemplate:
+- it: tests if federated workload identity expirationSeconds is overridden properly
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  set:
+    gcp:
+      federatedWorkloadIdentity:
+        tokenExpiration: 3601
+  asserts:
+    - isNotEmpty:
+        path: spec.components.udca.volumes[?(@.name == "fwi-token")]
+    - equal:
+        path: spec.components.udca.volumes[?(@.name == "fwi-token")].projected.sources[0].serviceAccountToken.expirationSeconds
+        value: 3601
+- it: tests if volumes and mounts are created when federated workload identity is enabled
+  values:
+    - test-values.yaml
+    - test-fwi-values.yaml
+  asserts:
+    - isSubset:
+        path: spec.components.connectAgent.volumes[?(@.name == "fwi-token")]
+        content:
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: "this can be literally any value"
+                  expirationSeconds: 3600
+                  path: "baz"
+    - isSubset:
+        path: spec.components.mart.volumes[?(@.name == "fwi-token")]
+        content:
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: "this can be literally any value"
+                  expirationSeconds: 3600
+                  path: "baz"
+    - isSubset:
+        path: spec.components.mintTaskScheduler.volumes[?(@.name == "fwi-token")]
+        content:
+          projected:
+            sources:
+            - serviceAccountToken:
+                audience: "this can be literally any value"
+                expirationSeconds: 3600
+                path: "baz"
+    - isSubset:
+        path: spec.components.udca.volumes[?(@.name == "fwi-token")]
+        content:
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: "this can be literally any value"
+                  expirationSeconds: 3600
+                  path: "baz"
+    - isSubset:
+        path: spec.components.watcher.volumes[?(@.name == "fwi-token")]
+        content:
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: "this can be literally any value"
+                  expirationSeconds: 3600
+                  path: "baz"
+    - isSubset:
+        path: spec.components.connectAgent.containers[?(@.name == "apigee-connect-agent")].volumeMounts[?(@.name == "fwi-token")]
+        content:
+          mountPath: "/foo/bar"
+          readOnly: true
+    - isSubset:
+        path: spec.components.mart.containers[?(@.name == "apigee-mart")].volumeMounts[?(@.name == "fwi-token")]
+        content:
+          mountPath: "/foo/bar"
+          readOnly: true
+    - isSubset:
+        path: spec.components.mintTaskScheduler.containers[?(@.name == "apigee-mint-task-scheduler")].volumeMounts[?(@.name == "fwi-token")]
+        content:
+          mountPath: "/foo/bar"
+          readOnly: true
+    - isSubset:
+        path: spec.components.udca.containers[?(@.name == "apigee-udca")].volumeMounts[?(@.name == "fwi-token")]
+        content:
+          mountPath: "/foo/bar"
+          readOnly: true
+        # At the time of writing, the fluentD container doesn't need the SA
+    - isSubset:
+        path: spec.components.watcher.containers[?(@.name == "apigee-watcher")].volumeMounts[?(@.name == "fwi-token")]
+        content:
+          mountPath: "/foo/bar"
+          readOnly: true
+- it: all component should not have requiredDuringSchedulingIgnoredDuringExecution if requiredForScheduling is false
+  values:
+  - test-values.yaml
+  set:
+    nodeSelector:
+      requiredForScheduling: false
+  asserts:
+  - notExists:
+      path: spec.components.cassandraUserSetup.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  - notExists:
+      path: spec.components.cassandraSchemaSetup.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  - notExists:
+      path: spec.components.connectAgent.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  - notExists:
+      path: spec.components.cassandraSchemaValidation.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  - notExists:
+      path: spec.components.watcher.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  - notExists:
+      path: spec.components.mart.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  - notExists:
+      path: spec.components.mintTaskScheduler.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  - notExists:
+      path: spec.components.udca.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  - notExists:
+      path: spec.components.ingressGateways[*].nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+- it: cassandraUserSetup should have a global tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "key1"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.cassandraUserSetup.tolerations
+  - lengthEqual:
+      path: spec.components.cassandraUserSetup.tolerations
+      count: 1
+- it: cassandraUserSetup should have a component specific tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    cassandraUserSetup:
+      tolerations:
+      - key: "key1"
+        operator: "Equal"
+        value: "value1"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.cassandraUserSetup.tolerations
+  - lengthEqual:
+      path: spec.components.cassandraUserSetup.tolerations
+      count: 1
+- it: cassandraUserSetup should have a component specific tolerations even if global is provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "global"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    - key: "global2"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    cassandraUserSetup:
+      tolerations:
+      - key: "component"
+        operator: "Equal"
+        value: "cassandraUserSetup"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.cassandraUserSetup.tolerations
+  - lengthEqual:
+      path: spec.components.cassandraUserSetup.tolerations
+      count: 1
+  - isSubset:
+      path: spec.components.cassandraUserSetup
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "cassandraUserSetup"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec.components.cassandraUserSetup
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+- it: cassandraSchemaSetup should have a global tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "key1"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.cassandraSchemaSetup.tolerations
+  - lengthEqual:
+      path: spec.components.cassandraSchemaSetup.tolerations
+      count: 1
+- it: cassandraSchemaSetup should have a component specific tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    cassandraSchemaSetup:
+      tolerations:
+      - key: "key1"
+        operator: "Equal"
+        value: "value1"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.cassandraSchemaSetup.tolerations
+  - lengthEqual:
+      path: spec.components.cassandraSchemaSetup.tolerations
+      count: 1
+- it: cassandraSchemaSetup should have a component specific tolerations even if global is provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "global"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    - key: "global2"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    cassandraSchemaSetup:
+      tolerations:
+      - key: "component"
+        operator: "Equal"
+        value: "cassandraSchemaSetup"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.cassandraSchemaSetup.tolerations
+  - lengthEqual:
+      path: spec.components.cassandraSchemaSetup.tolerations
+      count: 1
+  - isSubset:
+      path: spec.components.cassandraSchemaSetup
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "cassandraSchemaSetup"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec.components.cassandraSchemaSetup
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+- it: connectAgent should have a global tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "key1"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.connectAgent.tolerations
+  - lengthEqual:
+      path: spec.components.connectAgent.tolerations
+      count: 1
+- it: connectAgent should have a component specific tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    connectAgent:
+      tolerations:
+      - key: "key1"
+        operator: "Equal"
+        value: "value1"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.connectAgent.tolerations
+  - lengthEqual:
+      path: spec.components.connectAgent.tolerations
+      count: 1
+- it: connectAgent should have a component specific tolerations even if global is provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "global"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    - key: "global2"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    connectAgent:
+      tolerations:
+      - key: "component"
+        operator: "Equal"
+        value: "connectAgent"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.connectAgent.tolerations
+  - lengthEqual:
+      path: spec.components.connectAgent.tolerations
+      count: 1
+  - isSubset:
+      path: spec.components.connectAgent
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "connectAgent"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec.components.connectAgent
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+- it: cassandraSchemaValidation should have a global tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "key1"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.cassandraSchemaValidation.tolerations
+  - lengthEqual:
+      path: spec.components.cassandraSchemaValidation.tolerations
+      count: 1
+- it: cassandraSchemaValidation should have a component specific tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    cassandraSchemaValidation:
+      tolerations:
+      - key: "key1"
+        operator: "Equal"
+        value: "value1"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.cassandraSchemaValidation.tolerations
+  - lengthEqual:
+      path: spec.components.cassandraSchemaValidation.tolerations
+      count: 1
+- it: cassandraSchemaValidation should have a component specific tolerations even if global is provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "global"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    - key: "global2"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    cassandraSchemaValidation:
+      tolerations:
+      - key: "component"
+        operator: "Equal"
+        value: "cassandraSchemaValidation"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.cassandraSchemaValidation.tolerations
+  - lengthEqual:
+      path: spec.components.cassandraSchemaValidation.tolerations
+      count: 1
+  - isSubset:
+      path: spec.components.cassandraSchemaValidation
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "cassandraSchemaValidation"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec.components.cassandraSchemaValidation
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+- it: watcher should have a global tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "key1"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.watcher.tolerations
+  - lengthEqual:
+      path: spec.components.watcher.tolerations
+      count: 1
+- it: watcher should have a component specific tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    watcher:
+      tolerations:
+      - key: "key1"
+        operator: "Equal"
+        value: "value1"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.watcher.tolerations
+  - lengthEqual:
+      path: spec.components.watcher.tolerations
+      count: 1
+- it: watcher should have a component specific tolerations even if global is provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "global"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    - key: "global2"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    watcher:
+      tolerations:
+      - key: "component"
+        operator: "Equal"
+        value: "watcher"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.watcher.tolerations
+  - lengthEqual:
+      path: spec.components.watcher.tolerations
+      count: 1
+  - isSubset:
+      path: spec.components.watcher
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "watcher"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec.components.watcher
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+- it: mart should have a global tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "key1"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.mart.tolerations
+  - lengthEqual:
+      path: spec.components.mart.tolerations
+      count: 1
+- it: mart should have a component specific tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    mart:
+      tolerations:
+      - key: "key1"
+        operator: "Equal"
+        value: "value1"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.mart.tolerations
+  - lengthEqual:
+      path: spec.components.mart.tolerations
+      count: 1
+- it: mart should have a component specific tolerations even if global is provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "global"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    - key: "global2"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    mart:
+      tolerations:
+      - key: "component"
+        operator: "Equal"
+        value: "mart"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.mart.tolerations
+  - lengthEqual:
+      path: spec.components.mart.tolerations
+      count: 1
+  - isSubset:
+      path: spec.components.mart
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "mart"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec.components.mart
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+- it: mintTaskScheduler should have a global tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "key1"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.mintTaskScheduler.tolerations
+  - lengthEqual:
+      path: spec.components.mintTaskScheduler.tolerations
+      count: 1
+- it: mintTaskScheduler should have a component specific tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    mintTaskScheduler:
+      tolerations:
+      - key: "key1"
+        operator: "Equal"
+        value: "value1"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.mintTaskScheduler.tolerations
+  - lengthEqual:
+      path: spec.components.mintTaskScheduler.tolerations
+      count: 1
+- it: mintTaskScheduler should have a component specific tolerations even if global is provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "global"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    - key: "global2"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    mintTaskScheduler:
+      tolerations:
+      - key: "component"
+        operator: "Equal"
+        value: "mintTaskScheduler"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.mintTaskScheduler.tolerations
+  - lengthEqual:
+      path: spec.components.mintTaskScheduler.tolerations
+      count: 1
+  - isSubset:
+      path: spec.components.mintTaskScheduler
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "mintTaskScheduler"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec.components.mintTaskScheduler
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+- it: udca should have a global tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "key1"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.udca.tolerations
+  - lengthEqual:
+      path: spec.components.udca.tolerations
+      count: 1
+- it: udca should have a component specific tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    udca:
+      tolerations:
+      - key: "key1"
+        operator: "Equal"
+        value: "value1"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.udca.tolerations
+  - lengthEqual:
+      path: spec.components.udca.tolerations
+      count: 1
+- it: udca should have a component specific tolerations even if global is provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "global"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    - key: "global2"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    udca:
+      tolerations:
+      - key: "component"
+        operator: "Equal"
+        value: "udca"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.udca.tolerations
+  - lengthEqual:
+      path: spec.components.udca.tolerations
+      count: 1
+  - isSubset:
+      path: spec.components.udca
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "udca"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec.components.udca
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+- it: ingressGateways should have a global tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "key1"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.ingressGateways[?(@.name == "unittest0")].tolerations
+  - lengthEqual:
+      path: spec.components.ingressGateways[?(@.name == "unittest0")].tolerations
+      count: 1
+- it: ingressGateways should have a component specific tolerations when provided
+  values:
+  - test-values.yaml
+  set:
+    apigeeIngressGateway:
+      tolerations:
+      - key: "key1"
+        operator: "Equal"
+        value: "value1"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.ingressGateways[?(@.name == "unittest0")].tolerations
+  - lengthEqual:
+      path: spec.components.ingressGateways[?(@.name == "unittest0")].tolerations
+      count: 1
+- it: ingressGateways should have a component specific tolerations even if global is provided
+  values:
+  - test-values.yaml
+  set:
+    tolerations:
+    - key: "global"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    - key: "global2"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+    apigeeIngressGateway:
+      tolerations:
+      - key: "component"
+        operator: "Equal"
+        value: "udca"
+        effect: "NoSchedule"
+  asserts:
+  - isNotEmpty:
+      path: spec.components.ingressGateways[?(@.name == "unittest0")].tolerations
+  - lengthEqual:
+      path: spec.components.ingressGateways[?(@.name == "unittest0")].tolerations
+      count: 1
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "unittest0")]
+      content:
+        tolerations:
+        - key: "component"
+          operator: "Equal"
+          value: "udca"
+          effect: "NoSchedule"
+  - isNotSubset:
+      path: spec.components.ingressGateways[?(@.name == "unittest0")]
+      content:
+        tolerations:
+        - key: "global"
+          operator: "Equal"
+          value: "value1"
+          effect: "NoSchedule"
+- it: watcher should have a leader elect true by default
+  values:
+  - test-values.yaml
+  asserts:
+  - equal:
+      path: spec.components.watcher.properties.enableLeaderElect
+      value: true
+- it: watcher's leader elect should be overridden to be false
+  values:
+  - test-values.yaml
+  set:
+    watcher:
+      args:
+        enableLeaderElect: false
+  asserts:
+  - equal:
+      path: spec.components.watcher.properties.enableLeaderElect
+      value: false
+- it: watcher's leader elect should be overridden to be false
+  values:
+  - test-values.yaml
+  set:
+    watcher:
+      args:
+        enableLeaderElect: false
+  asserts:
+  - equal:
+      path: spec.components.watcher.properties.enableLeaderElect
+      value: false
+- it: when ingressGateways targetCPUUtilizationPercentage is modified
+  values:
+    - test-values.yaml
+  set:
+    ingressGateways:
+    - name: ingress-1 # maximum 17 characters. See Known issue 243167389.
+      targetCPUUtilizationPercentage: 15
+  asserts:
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")].autoScaler
+      content:
+        minReplicas: 2
+        maxReplicas: 4
+        metrics:
+        - type: Resource
+          resource:
+            name: cpu
+            target:
+              type: "Utilization"
+              averageUtilization: 15
+- it: when apigeeIngressGateway targetCPUUtilizationPercentage is modified
+  values:
+    - test-values.yaml
+  set:
+    apigeeIngressGateway:
+      targetCPUUtilizationPercentage: 12
+    ingressGateways:
+    - name: ingress-1 # maximum 17 characters. See Known issue 243167389.
+  asserts:
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")].autoScaler
+      content:
+        minReplicas: 2
+        maxReplicas: 4
+        metrics:
+        - type: Resource
+          resource:
+            name: cpu
+            target:
+              type: "Utilization"
+              averageUtilization: 12
+- it: ess encryption key
+  values:
+  - test-values.yaml
+  set:
+    encryptionKeySecretProviderClass: test-spc
+  asserts:
+  - equal:
+      path: spec.dataEncryptionSecretProviderClass
+      value: test-spc
+  - isNull:
+      path: spec.components.mintTaskScheduler.containers[?(@.name == "apigee-mint-task-scheduler")].env
+  - isNull:
+      path: spec.components.mart.containers[?(@.name == "apigee-mart")].env
+- it: default apigeeIngressGateway terminationGracePeriodSeconds
+  values:
+  - test-values.yaml
+  set:
+    ingressGateways:
+    - name: ingress-terminationGracePeriodSeconds # maximum 17 characters. See Known issue 243167389.
+  asserts:
+  - equal:
+      path: spec.components.ingressGateways[?(@.name == "ingress-terminationGracePeriodSeconds")].terminationGracePeriodSeconds
+      value: 300
+- it: when apigeeIngressGateway terminationGracePeriodSeconds is modified
+  values:
+  - test-values.yaml
+  set:
+    apigeeIngressGateway:
+      terminationGracePeriodSeconds: 500
+    ingressGateways:
+    - name: ingress-terminationGracePeriodSeconds # maximum 17 characters. See Known issue 243167389.
+  asserts:
+  - equal:
+      path: spec.components.ingressGateways[?(@.name == "ingress-terminationGracePeriodSeconds")].terminationGracePeriodSeconds
+      value: 500
+- it: default kms/kvm encryption secret
+  set:
+    instanceID: test-id
+    org: test-org
+  asserts:
+  - isSubset:
+      path: spec.components.mart.containers[?(@.name == "apigee-mart")].env[?(@.name == "TEST_ORG_KMS_ENCRYPTION_KEY")].valueFrom
+      content:
+        secretKeyRef:
+          name: test-org-c137659-encryption-keys
+          key: kmsEncryptionKey
+  - isSubset:
+      path: spec.components.mart.containers[?(@.name == "apigee-mart")].env[?(@.name == "TEST_ORG_KVM_ENCRYPTION_KEY")].valueFrom
+      content:
+        secretKeyRef:
+          name: test-org-c137659-encryption-keys
+          key: kvmEncryptionKey
+- it: kms encryption secret
+  set:
+    instanceID: test-id
+    org: test-org
+    kmsEncryptionSecret:
+      name: test-secret
+      key: test-key
+  asserts:
+  - isSubset:
+      path: spec.components.mart.containers[?(@.name == "apigee-mart")].env[?(@.name == "TEST_ORG_KMS_ENCRYPTION_KEY")].valueFrom
+      content:
+        secretKeyRef:
+          name: test-secret
+          key: test-key
+- it: kvm encryption secret
+  set:
+    instanceID: test-id
+    org: test-org
+    kvmEncryptionSecret:
+      name: test-secret
+      key: test-key
+  asserts:
+  - isSubset:
+      path: spec.components.mart.containers[?(@.name == "apigee-mart")].env[?(@.name == "TEST_ORG_KVM_ENCRYPTION_KEY")].valueFrom
+      content:
+        secretKeyRef:
+          name: test-secret
+          key: test-key
+- it: instance ID longer than 63 chars
+  set:
+    instanceID: abcdefghij0123456789abcdefghij0123456789abcdefghij0123456789RRRR
+    org: test-org
+  asserts:
+  - failedTemplate:
+      errorMessage: "instanceID must be <= 63 chars long, got 64"
+- it: when enhance proxy limits is true
+  set:
+    instanceID: test-id
+    org: test-org
+    enhanceProxyLimits: true
+    ingressGateways:
+    - name: ingress-1 # maximum 17 characters. See Known issue 243167389.
+      replicaCountMin: 1
+      replicaCountMax: 2
+      svcType: LoadBalancer
+  asserts:
+  - equal:
+      path: spec.proxyChainingAddress
+      value: apigee-ingressgateway-internal-chaining-test-org-c137659.NAMESPACE.svc.cluster.local
+  - isNotNull:
+      path: spec.components.ingressGateways
+  - lengthEqual:
+      path: spec.components.ingressGateways
+      count: 2
+  - isNotNull:
+      path: spec.components.ingressGateways[?(@.name == "internal-chaining")]
+  - equal:
+      path: spec.components.ingressGateways[?(@.name == "internal-chaining")].name
+      value: internal-chaining
+  - isNotNull:
+      path: spec.components.ingressGateways[?(@.name == "internal-chaining")].version
+  - isNull:
+      path: spec.components.ingressGateways[?(@.name == "internal-chaining")].tolerations
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "internal-chaining")]
+      content:
+        serviceSpec:
+          type: ClusterIP
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "internal-chaining")]
+      content:
+        securityContext:
+          privileged: false
+          runAsGroup: 998
+          runAsNonRoot: true
+          runAsUser: 999
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "internal-chaining")].nodeAffinity
+      content:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "internal-chaining")]
+      content:
+        autoScaler:
+          minReplicas: 2
+          maxReplicas: 4
+          metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target:
+                type: "Utilization"
+                averageUtilization: 75
+  - isNotNull:
+      path: spec.components.ingressGateways[?(@.name == "internal-chaining")].containers[?(@.name == "apigee-ingressgateway")].image
+      value: IfNotPresent
+  - equal:
+      path: spec.components.ingressGateways[?(@.name == "internal-chaining")].containers[?(@.name == "apigee-ingressgateway")].imagePullPolicy
+      value: IfNotPresent
+  - isNull:
+      path: spec.components.ingressGateways[?(@.name == "internal-chaining")].containers[?(@.name == "apigee-ingressgateway")].resources
+  - isNotNull:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")]
+  - equal:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")].name
+      value: ingress-1
+  - isNotNull:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")].version
+  - isNull:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")].tolerations
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")]
+      content:
+        serviceSpec:
+          type: LoadBalancer
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")]
+      content:
+        securityContext:
+          privileged: false
+          runAsGroup: 998
+          runAsNonRoot: true
+          runAsUser: 999
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")].nodeAffinity
+      content:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")]
+      content:
+        autoScaler:
+          minReplicas: 1
+          maxReplicas: 2
+          metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target:
+                type: "Utilization"
+                averageUtilization: 75
+  - isNotNull:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")].containers[?(@.name == "apigee-ingressgateway")].image
+      value: IfNotPresent
+  - equal:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")].containers[?(@.name == "apigee-ingressgateway")].imagePullPolicy
+      value: IfNotPresent
+  - isNull:
+      path: spec.components.ingressGateways[?(@.name == "ingress-1")].containers[?(@.name == "apigee-ingressgateway")].resources
+- it: when enhance proxy limits is true with chaining overridden
+  set:
+    instanceID: test-id
+    org: test-org
+    enhanceProxyLimits: true
+    apigeeChainingGateway:
+      name: internal-chain
+    ingressGateways:
+    - name: internal-chain
+      svcType: ClusterIP
+      replicaCountMin: 3
+      replicaCountMax: 5
+      terminationGracePeriodSeconds: 150
+      targetCPUUtilizationPercentage: 80
+      image:
+        url: "gcr.io/apigee-release/hybrid/apigee-asm-ingress"
+        tag: "1.19.10-asm.9-distroless"
+        pullPolicy: IfNotPresent
+      resources:
+        limits:
+          cpu: 200m
+          memory: 500Mi
+        requests:
+          cpu: 30m
+          memory: 12Mi
+  asserts:
+  - equal:
+      path: spec.proxyChainingAddress
+      value: apigee-ingressgateway-internal-chain-test-org-c137659.NAMESPACE.svc.cluster.local
+  - isNotNull:
+      path: spec.components.ingressGateways
+  - lengthEqual:
+      path: spec.components.ingressGateways
+      count: 1
+  - isNotNull:
+      path: spec.components.ingressGateways[?(@.name == "internal-chain")]
+  - equal:
+      path: spec.components.ingressGateways[?(@.name == "internal-chain")].name
+      value: internal-chain
+  - isNotNull:
+      path: spec.components.ingressGateways[?(@.name == "internal-chain")].version
+  - isNull:
+      path: spec.components.ingressGateways[?(@.name == "internal-chain")].tolerations
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "internal-chain")]
+      content:
+        serviceSpec:
+          type: ClusterIP
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "internal-chain")]
+      content:
+        securityContext:
+          privileged: false
+          runAsGroup: 998
+          runAsNonRoot: true
+          runAsUser: 999
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "internal-chain")].nodeAffinity
+      content:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+            - key: "cloud.google.com/gke-nodepool"
+              operator: In
+              values:
+              - "apigee-runtime"
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "internal-chain")]
+      content:
+        autoScaler:
+          minReplicas: 3
+          maxReplicas: 5
+          metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target:
+                type: "Utilization"
+                averageUtilization: 80
+  - equal:
+      path: spec.components.ingressGateways[?(@.name == "internal-chain")].containers[?(@.name == "apigee-ingressgateway")].imagePullPolicy
+      value: IfNotPresent
+  - isSubset:
+      path: spec.components.ingressGateways[?(@.name == "internal-chain")].containers[?(@.name == "apigee-ingressgateway")].resources
+      content:
+        limits:
+          cpu: 200m
+          memory: 500Mi
+        requests:
+          cpu: 30m
+          memory: 12Mi
+- it: check security context with component seccomp profile
+  set:
+    org: test-org
+    instanceID: test-id
+    cassandraUserSetup:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+  asserts:
+  - equal:
+      path: spec.components.cassandraUserSetup.securityContext.seccompProfile.type
+      value: RuntimeDefault
+- it: check security context with org seccomp profile
+  set:
+    org: test-org
+    instanceID: test-id
+    securityContext:
+      seccompProfile:
+        type: RuntimeDefault
+  asserts:
+  - equal:
+      path: spec.components.cassandraUserSetup.securityContext.seccompProfile.type
+      value: RuntimeDefault
+  - equal:
+      path: spec.components.cassandraSchemaSetup.securityContext.seccompProfile.type
+      value: RuntimeDefault
+  - equal:
+      path: spec.components.connectAgent.securityContext.seccompProfile.type
+      value: RuntimeDefault
+  - equal:
+      path: spec.components.cassandraSchemaValidation.securityContext.seccompProfile.type
+      value: RuntimeDefault
+  - equal:
+      path: spec.components.watcher.securityContext.seccompProfile.type
+      value: RuntimeDefault
+  - equal:
+      path: spec.components.mart.securityContext.seccompProfile.type
+      value: RuntimeDefault
+  - equal:
+      path: spec.components.mintTaskScheduler.securityContext.seccompProfile.type
+      value: RuntimeDefault
+  - equal:
+      path: spec.components.udca.securityContext.seccompProfile.type
+      value: RuntimeDefault
+- it: check the priority between component and org security context
+  set:
+    org: test-org
+    instanceID: test-id
+    securityContext:
+      seccompProfile:
+        type: RuntimeDefault
+    cassandraSchemaSetup:
+      securityContext:
+        seccompProfile:
+          type: Localhost
+          localhostProfile: /foo/bar
+  asserts:
+  - equal:
+      path: spec.components.cassandraSchemaSetup.securityContext.seccompProfile.type
+      value: Localhost
+- it: should fail if the seccomp profile is not among RuntimeDefault, Localhost and Unconfined.
+  set:
+    org: test-org
+    instanceID: test-id
+    mintTaskScheduler:
+      securityContext:
+        seccompProfile:
+          type: Default
+  asserts:
+  - failedTemplate:
+      errorMessage: "The seccomp profile type value should be empty or among RuntimeDefault, Unconfined, Localhost."
+- it: should fail if the seccomp localhostProfile is not empty but the type is not Localhost
+  set:
+    org: test-org
+    instanceID: test-id
+    udca:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+          localhostProfile: /foo/bar
+  asserts:
+  - failedTemplate:
+      errorMessage: "The localhostProfile should be empty if the seccomp profile type is not Localhost."
+- it: should fail if the seccomp localhostProfile is empty but the type is Localhost
+  set:
+    org: test-org
+    instanceID: test-id
+    udca:
+      securityContext:
+        seccompProfile:
+          type: Localhost
+  asserts:
+  - failedTemplate:
+      errorMessage: "The localhostProfile can't be empty if the seccomp profile type is Localhost."

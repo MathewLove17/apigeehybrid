@@ -1,0 +1,34 @@
+org: bar
+
+envs:
+  - name: "foo"
+    serviceAccountPaths:
+      runtime: test-file.txt
+      udca: test-file.txt
+      synchronizer: test-file.txt
+    httpProxy:
+      managementplane: true
+      host: 10.156.15.220
+      port: 3128
+      scheme: HTTPS
+      username: test
+      password: secret123
+  - name: "bar"
+    serviceAccountPaths:
+      runtime: test-file.txt
+      udca: test-file.txt
+      synchronizer: test-file.txt
+    httpProxy:
+      host: 10.156.15.119
+      port: 3128
+      scheme: HTTP
+      username: akshaypai
+      password: secret345
+
+httpProxy:
+  host: 10.156.15.118
+  port: 3128
+  scheme: HTTP
+  username: fefe
+  password: feferson
+  useForRuntimeManagement: true

@@ -1,0 +1,133 @@
+{{- $seccompProfileInfo := include "getGuardrailsSeccompProfileInfo" (dict "values" .Values) | fromYaml }}
+{{- $seccompProfileType := $seccompProfileInfo.type }}
+{{- $localhostProfile := $seccompProfileInfo.localhostProfile }}
+{{- $guardrailsName := "apigee-operator-guardrails" -}}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: apigee-hybrid-helm-guardrail-operator
+  namespace: {{ include "namespace" . }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+  labels:
+    app: apigee-hybrid-helm-guardrail
+spec:
+  {{- if or (.Values.serviceAccountSecretProviderClass) (.Values.gcp.workloadIdentity.enabled) }}
+  serviceAccountName: {{ $guardrailsName }}-sa
+  {{- end }}
+  {{- with .Values.imagePullSecrets }}
+  imagePullSecrets:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.nodeSelector }}
+  affinity:
+    {{- include "nodeAffinity.runtime" . | nindent 4 }}
+  {{- end }}
+  {{- $t := default .Values.tolerations .Values.guardrails.tolerations }}
+  {{- with $t }}
+  tolerations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: {{ .Values.apigeeUserID }}
+    runAsGroup: {{ .Values.apigeeGroupID }}
+    {{- if ne $seccompProfileType "" }}
+    seccompProfile:
+      type: {{ $seccompProfileType }}
+      {{- if ne $localhostProfile "" }}
+      localhostProfile: {{ $localhostProfile }}
+      {{- end }}
+    {{- end }}
+  containers:
+    - name: apigee-hybrid-helm-guardrail-container
+      image: {{ include "container.image" (dict "hub" .Values.hub "o" .Values.guardrails "n" "apigee-watcher") }}
+      imagePullPolicy: {{ .Values.guardrails.image.pullPolicy }}
+      command: ['/helmguardrails']
+      env:
+      - name: COMPONENT
+        value: "operator"
+      - name: PROJECTID
+        value: {{ .Values.gcp.projectID }}
+      - name: CHECKPOINT
+      {{- if .Values.checkpoint }}
+        value: {{ .Values.checkpoint }}
+      {{- else }}
+        value: "pre-install"
+      {{- end }}
+      - name: APIGEE_ENDPOINT
+        value: {{ .Values.contractProvider }}
+      {{- if .Values.httpProxy }}
+      {{- if .Values.httpProxy.username }}
+      - name: {{ lower .Values.httpProxy.scheme }}_proxy
+        value: {{ lower .Values.httpProxy.scheme }}://{{ quote .Values.httpProxy.username }}:{{ quote .Values.httpProxy.password }}@{{ .Values.httpProxy.host }}:{{ .Values.httpProxy.port }}
+      {{- else }}
+      - name: {{ lower .Values.httpProxy.scheme }}_proxy
+        value: {{ lower .Values.httpProxy.scheme }}://{{ .Values.httpProxy.host }}:{{ .Values.httpProxy.port }}
+      {{- end }}
+      {{- end }}
+      {{- if not .Values.gcp.workloadIdentity.enabled }}
+      - name: GOOGLE_APPLICATION_CREDENTIALS
+        {{- if .Values.serviceAccountSecretProviderClass }}
+        value: /opt/apigee/external-secrets/gsa/guardrails
+        {{- else }}
+        value: /etc/secret/client_secret.json
+        {{- end }}
+      {{- end }}
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+          - ALL
+      {{- with .Values.guardrails.resources }}
+      resources:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if or (include "fwi.enabled" .) (not .Values.gcp.workloadIdentity.enabled) }}
+      volumeMounts:
+      {{- if not .Values.gcp.workloadIdentity.enabled }}
+      - readOnly: true
+      {{- if .Values.serviceAccountSecretProviderClass }}
+        name: "apigee-external-secrets-gsa"
+        mountPath: /opt/apigee/external-secrets/gsa
+      {{- else }}
+        name: "svc-account-volume"
+        mountPath: /etc/secret
+      {{- end }}
+      {{- end }}
+      {{- if include "fwi.enabled" . }}
+      - name: fwi-token
+        mountPath: {{ include "fwi.tokenPath" . }}
+        readOnly: true
+      {{- end }}
+      {{- end }}
+  {{- if or (include "fwi.enabled" .) (not .Values.gcp.workloadIdentity.enabled) }}
+  volumes:
+  {{- if not .Values.gcp.workloadIdentity.enabled }}
+  {{- if .Values.serviceAccountSecretProviderClass }}
+  - name: "apigee-external-secrets-gsa"
+    csi:
+      driver: "secrets-store.csi.k8s.io"
+      readOnly: true
+      volumeAttributes:
+        secretProviderClass: {{ .Values.serviceAccountSecretProviderClass }}
+  {{- else }}
+  - name: "svc-account-volume"
+    secret:
+      secretName: {{ default (printf "%s-svc-account" $guardrailsName) .Values.guardrails.serviceAccountRef }}
+  {{- end }}
+  {{- end }}
+  {{- if include "fwi.enabled" . }}
+  - name: fwi-token
+    projected:
+      sources:
+      - serviceAccountToken:
+          audience: {{ .Values.gcp.federatedWorkloadIdentity.audience }}
+          expirationSeconds: {{ .Values.gcp.federatedWorkloadIdentity.tokenExpiration }}
+          path: {{ include "fwi.tokenFile" . }}
+  {{- end }}
+  {{- end }}
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 0
