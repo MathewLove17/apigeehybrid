@@ -1,96 +1,79 @@
-# Un identificador único para esta instalación (puede ser cualquier string)
-instanceID: "poc-apigee-hybrid-eks"
+instanceID: apigee-nonprod-eks
  
-# Namespace donde estás instalando Apigee Hybrid en Kubernetes
-namespace: "apigee"
+namespace: apigee
  
 gcp:
-  projectID: "pocapigee-485810"
-  # Región de analytics (la tuya)
-  region: "europe-west1"
+  projectID: pocapigee-485810
+  region: europe-west1
  
 k8sCluster:
-  # Nombre lógico del cluster (puedes poner el nombre del EKS o uno amigable)
-  name: "adp8ks-eks-gamp-deucl-2"
-  # Ubicación/region del cluster (AWS region donde está EKS)
-  region: "eu-central-1"
+  name: adpk8s-eks-gamp-deuc1-2
+  region: eu-central-1
  
-# Nombre de la organización en Apigee (en tu caso coincide con el proyecto)
-org: "pocapigee-485810"
- 
-# Enhanced per-environment proxy limits (puedes dejarlo en true para POC)
-enhanceProxyLimits: true
- 
-# Control plane location (para Apigee Hybrid suele ser "europe-west1" si tu org está ahí)
-# Si tu control plane realmente está en otra región, cámbialo.
-contractProvider: "https://europe-west1-apigee.googleapis.com"
- 
+org: pocapigee-485810
+
+nodeSelector:
+  requiredForScheduling: false
+  apigeeRuntime:
+    key: "karpenter.sh/nodepool"
+    value: "adp-default"
+  apigeeData:
+    key: "karpenter.sh/nodepool"
+    value: "apigee-data"
+
 envs:
-  - name: "test"
+  - name: test
     serviceAccountSecretRefs:
-      # Para POC estás usando el secret manual que creaste en el cluster 2 (namespace apigee)
-      synchronizer: "apigee-non-prod-svc-account"
-      runtime: "apigee-non-prod-svc-account"
+      synchronizer: apigee-non-prod-svc-account
+      runtime: apigee-non-prod-svc-account
  
 cassandra:
-  # Para single-region (tu POC) debe ser false
   hostNetwork: false
-  # Para POC normalmente 1 (en prod suelen ser 3)
-  replicaCount: 1
+  replicaCount: 1   # no-prod
  
 ingressGateways:
-  # Nombre del ingress gateway (máx 17 chars)
-  - name: "ingressgw"
+  - name: apigee-ingress
     replicaCountMin: 2
     replicaCountMax: 2
-    # Si necesitas anotaciones para el LB de AWS (internal/public, etc.), se ponen aquí
-    # svcAnnotations:
-    #   service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
  
 virtualhosts:
-  - name: "hybrid-group"
+  - name: hybrid-group
     selector:
-      app: "apigee-ingressgateway"
-      ingress_name: "ingressgw"
+      app: apigee-ingressgateway
+      ingress_name: apigee-ingress
+    hostAliases:
+      - api.example.com
+    tls:
+      secretName: apigee-runtime-tls   # 🔑 creado por cert-manager
  
-    # TLS (Paso 6). Si generaste ficheros con openssl, pon las rutas aquí.
-    # Estas rutas son relativas al APIGEE_HELM_CHARTS_HOME y suelen vivir dentro del chart apigee-virtualhost.
-    sslCertPath: "apigee-virtualhost/certs/keystore_hybrid-group.crt"
-    sslKeyPath: "apigee-virtualhost/certs/keystore_hybrid-group.key"
- 
-# Componentes que usan el mismo service account secret (non-prod)
 guardrails:
-  serviceAccountRef: "apigee-non-prod-svc-account"
+  serviceAccountRef: apigee-non-prod-svc-account
  
 mart:
-  serviceAccountRef: "apigee-non-prod-svc-account"
+  serviceAccountRef: apigee-non-prod-svc-account
  
 connectAgent:
-  serviceAccountRef: "apigee-non-prod-svc-account"
+  serviceAccountRef: apigee-non-prod-svc-account
  
 logger:
   enabled: true
-  serviceAccountRef: "apigee-non-prod-svc-account"
+  serviceAccountRef: apigee-non-prod-svc-account
  
 metrics:
-  serviceAccountRef: "apigee-non-prod-svc-account"
+  serviceAccountRef: apigee-non-prod-svc-account
  
 watcher:
-  serviceAccountRef: "apigee-non-prod-svc-account"
- 
-# Monetization (si no lo usas, igual puedes dejarlo así sin instalar esos componentes)
-mintTaskScheduler:
-  serviceAccountRef: "apigee-non-prod-svc-account"
+  serviceAccountRef: apigee-non-prod-svc-account
  
 runtime:
   image:
-    url: "gcr.io/apigee-release/hybrid/apigee-runtime"
+    url: gcr.io/apigee-release/hybrid/apigee-runtime
     tag: "1.16.0"
-  # Valores de memoria POC (ajusta si te quedas corto)
+ 
   cwcAppend:
     bin_setenv_max_mem: 4096m
-  resources:
-    requests:
-      memory: 4Gi
-    limits:
-      memory: 6Gi
+    resources:
+      requests:
+        memory: 4Gi
+      limits:
+        memory: 6Gi
