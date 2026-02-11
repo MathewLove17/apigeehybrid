@@ -12,6 +12,22 @@ k8sCluster:
  
 org: pocapigee-485810
 
+apigeeOperator:
+  podAnnotations: {}
+  env:
+    - name: HTTP_PROXY
+      value: "http://proxy-gamp-hybrid-d2vpp.internet-dev.ec1.aws.aztec.cloud.allianz:8080"
+    - name: HTTPS_PROXY
+      value: "http://proxy-gamp-hybrid-d2vpp.internet-dev.ec1.aws.aztec.cloud.allianz:8080"
+    - name: NO_PROXY
+      value: "localhost,127.0.0.1,.svc,.cluster.local,kubernetes.default.svc,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+    - name: http_proxy
+      value: "http://proxy-gamp-hybrid-d2vpp.internet-dev.ec1.aws.aztec.cloud.allianz:8080"
+    - name: https_proxy
+      value: "http://proxy-gamp-hybrid-d2vpp.internet-dev.ec1.aws.aztec.cloud.allianz:8080"
+    - name: no_proxy
+      value: "localhost,127.0.0.1,.svc,.cluster.local,kubernetes.default.svc,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+
 nodeSelector:
   requiredForScheduling: false
   apigeeRuntime:
