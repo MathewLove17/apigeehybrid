@@ -1,9 +1,3 @@
-
-httpProxy:
-  scheme: HTTP
-  host: proxy-gamp-hybrid-d2vpp.internet-dev.ec1.aws.aztec.cloud.allianz
-  port: 8080
-  useForRuntimeManagement: true
  #aaasd
 instanceID: apigee-nonprod-eks
 namespace: apigee
@@ -27,8 +21,17 @@ nodeSelector:
     key: "karpenter.sh/nodepool"
     value: "apigee-data"
 
+httpProxy:
+  scheme: HTTP
+  host: proxy-gamp-hybrid-d2vpp.internet-dev.ec1.aws.aztec.cloud.allianz
+  port: 8080
+
 envs:
   - name: test
+    httpProxy:
+      scheme: HTTP
+      host: proxy-gamp-hybrid-d2vpp.internet-dev.ec1.aws.aztec.cloud.allianz
+      port: 8080
     serviceAccountSecretRefs:
       synchronizer: apigee-non-prod-svc-account
       runtime: apigee-non-prod-svc-account
