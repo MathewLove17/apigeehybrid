@@ -4,7 +4,7 @@ httpProxy:
   host: proxy-gamp-hybrid-d2vpp.internet-dev.ec1.aws.aztec.cloud.allianz
   port: 8080
   useForRuntimeManagement: true
- #aa
+ #aaasd
 instanceID: apigee-nonprod-eks
 namespace: apigee
  
