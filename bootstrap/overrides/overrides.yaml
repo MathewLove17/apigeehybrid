@@ -35,7 +35,7 @@ guardrails:
     tag: "1.16.0"
     pullPolicy: Always
 
-httpsProxy:
+httpProxy:
   scheme: HTTP
   host: proxy-gamp-hybrid-d2vpp.internet-dev.ec1.aws.aztec.cloud.allianz
   port: 8080
