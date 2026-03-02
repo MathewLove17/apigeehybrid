@@ -13,7 +13,7 @@ spec:
     path: charts/apigee-operator
     helm:
       valueFiles:
-        - ../overrides/overrides_V15_test.yaml
+        - ../../overrides/overrides_V15_test.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apigee
