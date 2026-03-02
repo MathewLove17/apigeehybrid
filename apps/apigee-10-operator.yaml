@@ -15,7 +15,7 @@ spec:
       valueFiles:
         - ../overrides/overrides_V15_test.yaml
   destination:
-    name: adpk8s-eks-gamp-deuc1-2
+    name: https://kubernetes.default.svc
     namespace: apigee
   syncPolicy:
     automated:
