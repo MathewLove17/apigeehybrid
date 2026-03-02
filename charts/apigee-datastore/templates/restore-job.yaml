@@ -24,9 +24,6 @@
 {{- if not (has $provider $supportedProviders) }}
   {{- fail (printf "Detected an unsupported restore provider %q. Please check the \"cassandra.restore.cloudProvider\" field in your overrides file.  Supported providers: %+q" $provider $supportedProviders) }}
 {{- end }}
-{{- $seccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.cassandra "values" .Values) | fromYaml }}
-{{- $seccompProfileType := $seccompProfileInfo.type }}
-{{- $localhostProfile := $seccompProfileInfo.localhostProfile }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -54,13 +51,6 @@ spec:
         runAsGroup: {{ .Values.apigeeGroupID }}
         {{- if .Values.cassandra.restore.keyFile }}
         fsGroup: {{ .Values.apigeeGroupID }}
-        {{- end }}
-        {{- if ne $seccompProfileType "" }}
-        seccompProfile:
-          type: {{ $seccompProfileType }}
-          {{- if ne $localhostProfile "" }}
-          localhostProfile: {{ $localhostProfile }}
-          {{- end }}
         {{- end }}
       serviceAccountName: {{ $restore }}-sa
       initContainers:

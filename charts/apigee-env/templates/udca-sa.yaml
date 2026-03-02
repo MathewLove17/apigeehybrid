@@ -1,4 +1,3 @@
-{{- if (not .Values.disableUDCA) }}
 {{- $udcaName := "apigee-udca" -}}
 {{- $values := .Values -}}
 {{- $chart := .Chart -}}
@@ -15,7 +14,6 @@ metadata:
   namespace: {{ include "namespace"  (dict "release" $release "values" $values) }}
   annotations:
     iam.gke.io/gcp-service-account: {{ include "getUdcaGSA" (dict "value" $values.gcp.workloadIdentity.gsa  "env" $env) }}
-{{- end -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

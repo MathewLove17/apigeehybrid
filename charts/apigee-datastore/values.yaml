@@ -7,7 +7,7 @@ namespace: apigee
 apigeeGroupID: 998
 apigeeUserID: 999
 gcp:
-  region: ""
+  region: us-central1
   projectID: ""
   projectIDRuntime: ""
   workloadIdentity:
@@ -28,10 +28,11 @@ serviceAccountSecretProviderClass: ""
 # Apigee Cassandra.
 #
 cassandra:
-  # Field to configure multi-networking, which is supported only for GDCC
+  # Fields to configure multi-networking, which is supported only for GDCC
   # (https://cloud.google.com/distributed-cloud-connected) clusters. Cannot be
   # used for platforms other than GDCC.
-  networks: []
+  secondaryNetworkName: ""
+  primaryNetworkName: "default"
   forceDelete: false
   auth:
     default:
@@ -53,7 +54,7 @@ cassandra:
       password: "iloveapis123"
     image:
       url: "gcr.io/apigee-release/hybrid/apigee-hybrid-cassandra-client"
-      tag: "1.16.0"
+      tag: "1.15.1"
       pullPolicy: IfNotPresent
   replicaCount: 1
   terminationGracePeriodSeconds: 300
@@ -67,7 +68,7 @@ cassandra:
     storageSize: 10Gi
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-hybrid-cassandra"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   resources:
     requests:
@@ -82,7 +83,7 @@ cassandra:
     enabled: false
     image:
       url: "gcr.io/apigee-release/hybrid/apigee-hybrid-cassandra-client"
-      tag: "1.16.0"
+      tag: "1.15.1"
       pullPolicy: IfNotPresent
     serviceAccountPath:
     schedule: "0 2 * * *"
@@ -93,7 +94,7 @@ cassandra:
     snapshotTimestamp:
     image:
       url: "gcr.io/apigee-release/hybrid/apigee-hybrid-cassandra-client"
-      tag: "1.16.0"
+      tag: "1.15.1"
       pullPolicy: IfNotPresent
     serviceAccountPath:
     dbStorageBucket:
@@ -110,7 +111,7 @@ removeDC:
 guardrails:
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-watcher"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   resources:
     requests:

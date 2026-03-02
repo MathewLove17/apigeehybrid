@@ -1,6 +1,3 @@
-{{- $seccompProfileInfo := include "getSeccompProfileInfo" (dict "values" .Values "component" .Values.ao) | fromYaml }}
-{{- $seccompProfileType := $seccompProfileInfo.type }}
-{{- $localhostProfile := $seccompProfileInfo.localhostProfile }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -33,14 +30,7 @@ spec:
         runAsGroup: {{ .Values.apigeeGroupID }}
         runAsUser: {{ .Values.apigeeUserID }}
         seccompProfile:
-          {{- if eq $seccompProfileType "" }}
           type: RuntimeDefault
-          {{- else }}
-          type: {{$seccompProfileType}}
-          {{- if ne $localhostProfile "" }}
-          localhostProfile: {{ $localhostProfile }}
-          {{- end }}
-          {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -103,7 +93,6 @@ spec:
         - --disable-managed-clusterroles={{ .Values.ao.args.disableManagedClusterRoles }}
         - --disable-sa-volume-projection={{ .Values.ao.args.disableSAProjection }}
         - --disable-secret-rotation-controller=false
-        - --enable-seccomp-profile=true
         {{- if .Values.ao.certManagerCAIssuerEnabled }}
         - --cert-issuer-name=apigee-ca-issuer
         {{- end }}

@@ -1,4 +1,4 @@
-{{- if and (not .Values.disableUDCA) .Values.gcp.workloadIdentity.enabled }}
+{{- if .Values.gcp.workloadIdentity.enabled }}
 {{- $udcaName := "apigee-udca" -}}
 {{- $generatedName := include "orgScopeEncodedName" (dict "name" .Values.org) -}}
 apiVersion: v1

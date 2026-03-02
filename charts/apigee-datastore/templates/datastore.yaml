@@ -4,8 +4,6 @@
 {{- $cassServiceName := include "cassandra.svc" . }}
 {{- $cassImg := include "container.image" (dict "hub" .Values.hub "o" .Values.cassandra "n" "apigee-hybrid-cassandra") }}
 {{- $clientImg := include "container.image" (dict "hub" .Values.hub "o" .Values.cassandra.auth "n" "apigee-hybrid-cassandra-client") }}
-{{- $seccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.cassandra "values" .Values) | fromYaml }}
-{{- $networkInterfaces := include "parseNetworkInterfaces" . | fromYaml }}
 
 {{/*
 Volume name for an External Secret Store for Google Service Accounts (GSA).
@@ -41,6 +39,16 @@ Hybrid documentation.
 https://cloud.google.com/apigee/docs/hybrid/latest/config-prop-ref
 */}}
 {{- $gsaEnvVar := "GSA_CREDENTIALS" }}
+
+{{ if .Values.cassandra.secondaryNetworkName }}
+  {{- if not (.Capabilities.APIVersions.Has "networking.gke.io/v1/Network") }}
+    {{ fail "Cluster does not have the \"networking.gke.io/v1/Network\" capability required to use \"cassandra.secondaryNetworkName\"" }}
+  {{ else if not (lookup "networking.gke.io/v1" "Network" "" .Values.cassandra.secondaryNetworkName) }}
+    {{ fail (printf "Unable to find network %q. Please check the \"cassandra.secondaryNetworkName\" field in your overrides file" .Values.cassandra.secondaryNetworkName) }}
+  {{ else if not (lookup "networking.gke.io/v1" "Network" "" .Values.cassandra.primaryNetworkName) }}
+    {{ fail (printf "Unable to find network %q. Please set the \"cassandra.primaryNetworkName\" field in your overrides file to a proper value" .Values.cassandra.primaryNetworkName) }}
+  {{ end }}
+{{- end }}
 
 apiVersion: apigee.cloud.google.com/v1alpha1
 kind: ApigeeDatastore
@@ -106,15 +114,6 @@ spec:
         capabilities:
           drop:
           - ALL
-        {{- $seccompProfileType := $seccompProfileInfo.type }}
-        {{- if ne $seccompProfileType "" }}
-        seccompProfile:
-          type: {{ $seccompProfileType }}
-          {{- $localhostProfile := $seccompProfileInfo.localhostProfile }}
-          {{- if ne $localhostProfile "" }}
-          localhostProfile: {{ $localhostProfile }}
-          {{- end}}
-        {{- end}}
       {{- with .Values.nodeSelector }}
       {{- include "nodeAffinity.data" . | nindent 6 }}
       {{- end }}
@@ -127,9 +126,12 @@ spec:
         {{- with .Values.cassandra.annotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-        {{- if $networkInterfaces.interfaces }}
-        networking.gke.io/default-interface: {{ $networkInterfaces.clientInterfaceName | quote }}
-        networking.gke.io/interfaces: '{{ $networkInterfaces.interfaces | toJson }}'
+        {{- if and .Values.cassandra.secondaryNetworkName .Values.cassandra.primaryNetworkName}}
+        networking.gke.io/default-interface: eth0
+        networking.gke.io/interfaces: '[
+            {"interfaceName": "eth0", "network": "{{ .Values.cassandra.primaryNetworkName }}"},
+            {"interfaceName": "net1", "network": "{{ .Values.cassandra.secondaryNetworkName }}"}
+          ]'
         {{- end }}
       version: {{ include "validateVersion" (dict "version" .Chart.AppVersion) | quote }}
       properties:

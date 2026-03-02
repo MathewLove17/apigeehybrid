@@ -31,7 +31,6 @@ nodeSelector:
   apigeeData:
     key: "cloud.google.com/gke-nodepool"
     value: "apigee-data"
-disableUDCA: true
 serviceAccountSecretProviderClass: ""
 imagePullSecrets: []
 tolerations: []
@@ -39,7 +38,7 @@ affinity: {}
 mart:
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-mart-server"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
 # Apigee Synchronizer.
 synchronizer:
@@ -55,7 +54,7 @@ synchronizer:
     value:
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-synchronizer"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   resources:
     requests:
@@ -91,6 +90,7 @@ runtime:
     "conf_metrics_server.metrics.latency.histogram.buckets.milliseconds": "EXPONENTIAL,1,1.78435658,20"
     "conf_http_HTTPClient.block.sitelocal.connections": "false"
     "conf_http_HTTPClient.block.linklocal.connections": "false"
+    "conf_security-secure.constructor.only": "false"
   replicaCountMin: 1
   replicaCountMax: 4
   installDir: "/opt/apigee/apigee-runtime"
@@ -104,7 +104,7 @@ runtime:
     value:
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-runtime"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   resources:
     requests:
@@ -172,7 +172,7 @@ udca:
   terminationGracePeriodSeconds: 600
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-udca"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   resources:
     limits:
@@ -217,7 +217,7 @@ defaults:
 guardrails:
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-watcher"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   resources:
     requests:

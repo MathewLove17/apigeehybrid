@@ -5,14 +5,11 @@
 contractProvider: https://apigee.googleapis.com
 org: ""
 gcp:
-  region: ""
+  region: us-central1
   projectID: ""
   projectIDRuntime: ""
   workloadIdentity:
     enabled: false
-  federatedWorkloadIdentity:
-    enabled: false
-    tokenExpiration: 3600
 namespace: apigee
 #
 # Cert Manager
@@ -36,7 +33,7 @@ ao:
   certManagerCAIssuerEnabled: false
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-operators"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: Always
   hostNetwork: false
   args:
@@ -64,7 +61,7 @@ redis:
 kubeRBACProxy:
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-kube-rbac-proxy"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   resources:
     limits:
@@ -78,7 +75,7 @@ kubeRBACProxy:
 guardrails:
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-watcher"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   resources:
     requests:

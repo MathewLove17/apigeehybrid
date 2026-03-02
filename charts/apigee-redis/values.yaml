@@ -24,7 +24,7 @@ redis:
     secretProviderClass: ""
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-redis"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   replicaCount: 2
   terminationGracePeriodSeconds: 600
@@ -46,7 +46,7 @@ redis:
   envoy:
     image:
       url: "gcr.io/apigee-release/hybrid/apigee-envoy"
-      tag: "1.16.0"
+      tag: "1.15.1"
       pullPolicy: IfNotPresent
     replicaCountMin: 1
     replicaCountMax: 1
@@ -71,7 +71,7 @@ redis:
 guardrails:
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-watcher"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   resources:
     requests:

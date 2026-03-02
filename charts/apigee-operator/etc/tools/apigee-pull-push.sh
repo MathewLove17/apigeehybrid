@@ -21,6 +21,7 @@ APIGEE_COMPONENTS=( \
 	"apigee-runtime" \
 	"apigee-hybrid-cassandra-client" \
 	"apigee-hybrid-cassandra" \
+	"apigee-udca" \
 	"apigee-connect-agent" \
 	"apigee-watcher" \
 	"apigee-operators" \

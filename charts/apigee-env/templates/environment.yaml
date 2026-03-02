@@ -16,12 +16,6 @@
 {{- range $i, $env := .Values.envs -}}
 {{- if eq $env.name $values.env -}}
 {{- $generatedName := include "envScopeEncodedName" (dict "org" $values.org "env" $env.name) -}}
-{{- $syncSeccompProfileInfo := include "getSeccompProfileInfo" (dict "component" $values.synchronizer "env" $env "values" $values) | fromYaml -}}
-{{- $syncSeccompProfileType := $syncSeccompProfileInfo.type -}}
-{{- $syncLocalhostProfile := $syncSeccompProfileInfo.localhostProfile -}}
-{{- $runtimeSeccompProfileInfo := include "getSeccompProfileInfo" (dict "component" $values.runtime "env" $env "values" $values) | fromYaml -}}
-{{- $runtimeSeccompProfileType := $runtimeSeccompProfileInfo.type -}}
-{{- $runtimeLocalhostProfile := $runtimeSeccompProfileInfo.localhostProfile -}}
 {{- if $values.org -}}
 apiVersion: apigee.cloud.google.com/v1alpha2
 kind: ApigeeEnvironment
@@ -43,7 +37,6 @@ spec:
   dataEncryptionSecretProviderClass: {{ $env.encryptionKeySecretProviderClass }}
   {{- end }}
   config:
-    disableUDCA: {{ $values.disableUDCA }}   # The default value for this will be true. Configurable in the off chance that some unique scenario requires it
     {{- if $values.newDataPipeline.debugSession }}
     tracePubSubEnabled: true
     traceDataflowDisabled: true
@@ -64,13 +57,6 @@ spec:
         runAsUser: {{ $values.apigeeUserID }}
         runAsGroup: {{ $values.apigeeGroupID }}
         privileged: false
-        {{- if ne $syncSeccompProfileType "" }}
-        seccompProfile:
-          type: {{ $syncSeccompProfileType }}
-          {{- if ne $syncLocalhostProfile "" }}
-          localhostProfile: {{ $syncLocalhostProfile }}
-          {{- end}}
-        {{- end}}
       {{- if $values.gcp.workloadIdentity.enabled }}
       podServiceAccountName: {{ $synchronizerName }}-{{ $generatedName }}-sa
       {{- else }}
@@ -274,14 +260,6 @@ spec:
           {{- toYaml . | nindent 10 }}
         {{- end }}
     runtime:
-      {{- if ne $runtimeSeccompProfileType "" }}
-      securityContext:
-        seccompProfile:
-          type: {{ $runtimeSeccompProfileType }}
-          {{- if ne $runtimeLocalhostProfile "" }}
-          localhostProfile: {{ $runtimeLocalhostProfile }}
-          {{- end}}
-      {{- end}}
       {{- if $values.gcp.workloadIdentity.enabled }}
       podServiceAccountName: {{ $runtimeName }}-{{ $generatedName }}-sa
       {{- else }}

@@ -10,7 +10,7 @@ data:
     apiVersion: networking.istio.io/v1alpha3
     kind: EnvoyFilter
     metadata:
-      name: apigee-envoyfilter-1-25
+      name: apigee-envoyfilter-1-20
       namespace: {{ include "namespace" . }}
     spec:
       workloadSelector:
@@ -24,7 +24,7 @@ data:
           cluster:
             portNumber: 8443
           proxy:
-            proxyVersion: ^1\.25.*
+            proxyVersion: ^1\.20.*
         patch:
           operation: MERGE
           value:
@@ -43,7 +43,7 @@ data:
               filter:
                 name: "envoy.filters.network.http_connection_manager"
           proxy:
-            proxyVersion: ^1\.25.*
+            proxyVersion: ^1\.20.*
         patch:
           operation: MERGE
           value:
@@ -57,7 +57,7 @@ data:
       - applyTo: ROUTE_CONFIGURATION
         match:
           proxy:
-            proxyVersion: ^1\.25.*
+            proxyVersion: ^1\.20.*
         patch:
           operation: MERGE
           value:
@@ -99,7 +99,7 @@ data:
         match:
           context: GATEWAY
           proxy:
-            proxyVersion: ^1\.25.*
+            proxyVersion: ^1\.20.*
           listener:
             filterChain:
               filter:
@@ -114,7 +114,7 @@ data:
         match:
           context: GATEWAY
           proxy:
-            proxyVersion: ^1\.25.*
+            proxyVersion: ^1\.20.*
           listener:
             filterChain:
               filter:
@@ -184,14 +184,6 @@ data:
                       request_handle:headers():replace(":PATH", p:sub(9, -1))
                     end
                   {{if .Values.istiod.healthCheckUserAgents}}end{{end}}
-
-                  -- merge authorization header
-                  local header_key = "authorization"
-                  local merged_value = request_handle:headers():get(header_key)
-                  if merged_value ~= nil and merged_value ~= "" then
-                    request_handle:headers():remove(header_key)
-                    request_handle:headers():add(header_key, merged_value)
-                  end
                 end
 
                 -- Sanitize and remove any x-apigee and x-envoy headers from responses.
@@ -226,7 +218,7 @@ data:
               filter:
                 name: envoy.filters.network.http_connection_manager
           proxy:
-            proxyVersion: ^1\.25.*
+            proxyVersion: ^1\.20.*
         patch:
           operation: MERGE
           value:
@@ -241,7 +233,7 @@ data:
               filter:
                 name: envoy.filters.network.http_connection_manager
           proxy:
-            proxyVersion: ^1\.25.*
+            proxyVersion: ^1\.20.*
         patch:
           operation: MERGE
           value:
@@ -429,14 +421,6 @@ data:
                       request_handle:headers():replace(":PATH", p:sub(9, -1))
                     end
                   {{if .Values.istiod.healthCheckUserAgents}}end{{end}}
-
-                  -- merge authorization header
-                  local header_key = "authorization"
-                  local merged_value = request_handle:headers():get(header_key)
-                  if merged_value ~= nil and merged_value ~= "" then
-                    request_handle:headers():remove(header_key)
-                    request_handle:headers():add(header_key, merged_value)
-                  end
                 end
 
                 -- Sanitize and remove any x-apigee and x-envoy headers from responses.
@@ -674,14 +658,6 @@ data:
                       request_handle:headers():replace(":PATH", p:sub(9, -1))
                     end
                   {{if .Values.istiod.healthCheckUserAgents}}end{{end}}
-
-                  -- merge authorization header
-                  local header_key = "authorization"
-                  local merged_value = request_handle:headers():get(header_key)
-                  if merged_value ~= nil and merged_value ~= "" then
-                    request_handle:headers():remove(header_key)
-                    request_handle:headers():add(header_key, merged_value)
-                  end
                 end
 
                 -- Sanitize and remove any x-apigee and x-envoy headers from responses.

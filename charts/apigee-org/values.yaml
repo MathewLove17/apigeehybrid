@@ -7,7 +7,7 @@ k8sCluster:
   name: ""
   region: ""
 gcp:
-  region: ""
+  region: us-central1
   projectID: ""
   projectIDRuntime: ""
   workloadIdentity:
@@ -20,7 +20,6 @@ apigeeGroupID: 998
 apigeeUserID: 999
 enhanceProxyLimits: false
 orgScopedUDCA: true
-disableUDCA: true
 nodeSelector:
   requiredForScheduling: true
   apigeeRuntime:
@@ -39,11 +38,11 @@ cassandra:
   auth:
     image:
       url: "gcr.io/apigee-release/hybrid/apigee-hybrid-cassandra-client"
-      tag: "1.16.0"
+      tag: "1.15.1"
       pullPolicy: IfNotPresent
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-hybrid-cassandra"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   restore:
     enabled: false
@@ -61,7 +60,7 @@ mintTaskScheduler:
   annotations: {}
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-mint-task-scheduler"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   resources:
     requests:
@@ -78,7 +77,7 @@ apigeeIngressGateway:
   targetCPUUtilizationPercentage: 75
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-asm-ingress"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   resources:
     limits:
@@ -91,7 +90,6 @@ apigeeChainingGateway:
   name: internal-chaining
   svcType: ClusterIP
   minTLSProtocolVersion: TLSV1_2
-  maxTLSProtocolVersion: TLS_AUTO
 ao:
   certManagerCAIssuerEnabled: false
 # Apigee MART
@@ -103,7 +101,7 @@ mart:
   nodeSelector: {}
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-mart-server"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   resources:
     requests:
@@ -145,7 +143,7 @@ connectAgent:
   logVerbosity: "0"
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-connect-agent"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   replicaCountMin: 1
   replicaCountMax: 1
@@ -162,7 +160,7 @@ connectAgent:
 watcher:
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-watcher"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   replicaCountMin: 1
   replicaCountMax: 1
@@ -203,7 +201,7 @@ udca:
   terminationGracePeriodSeconds: 600
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-udca"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   resources:
     requests:
@@ -247,7 +245,7 @@ defaults:
 guardrails:
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-watcher"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   resources:
     requests:

@@ -18,7 +18,7 @@ nodeSelector:
 istiod:
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-asm-istiod"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   resources:
     limits:
@@ -37,7 +37,7 @@ istiod:
 ao:
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-operators"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   args:
     loglevel: info
@@ -56,7 +56,7 @@ ao:
 kubeRBACProxy:
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-kube-rbac-proxy"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   resources:
     limits:
@@ -70,7 +70,7 @@ kubeRBACProxy:
 guardrails:
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-watcher"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   resources:
     requests:

@@ -18,33 +18,6 @@
 {{- $saAnnotation := "apigee.cloud.google.com/sa-config-checksum" -}}
 {{- $generatedName := include "orgScopeEncodedName" (dict "name" .Values.org) -}}
 {{- $generatedIngressChainingName := printf "%s-%s-%s" "apigee-ingressgateway" .Values.apigeeChainingGateway.name $generatedName -}}
-{{- $cassandraUserSetupSeccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.cassandraUserSetup "values" .Values) | fromYaml -}}
-{{- $cassandraUserSetupSeccompProfileType := $cassandraUserSetupSeccompProfileInfo.type -}}
-{{- $cassandraUserSetupLocalhostProfile := $cassandraUserSetupSeccompProfileInfo.localhostProfile -}}
-{{- $cassandraSchemaSetupSeccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.cassandraSchemaSetup "values" .Values) | fromYaml -}}
-{{- $cassandraSchemaSetupSeccompProfileType := $cassandraSchemaSetupSeccompProfileInfo.type -}}
-{{- $cassandraSchemaSetupLocalhostProfile := $cassandraSchemaSetupSeccompProfileInfo.localhostProfile -}}
-{{- $connectAgentSeccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.connectAgent "values" .Values) | fromYaml -}}
-{{- $connectAgentSeccompProfileType := $connectAgentSeccompProfileInfo.type -}}
-{{- $connectAgentLocalhostProfile := $connectAgentSeccompProfileInfo.localhostProfile -}}
-{{- $cassandraSchemaValidationSeccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.cassandraSchemaValidation "values" .Values) | fromYaml -}}
-{{- $cassandraSchemaValidationSeccompProfileType := $cassandraSchemaValidationSeccompProfileInfo.type -}}
-{{- $cassandraSchemaValidationLocalhostProfile := $cassandraSchemaValidationSeccompProfileInfo.localhostProfile -}}
-{{- $martSeccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.mart "values" .Values) | fromYaml -}}
-{{- $martSeccompProfileType := $martSeccompProfileInfo.type -}}
-{{- $martLocalhostProfile := $martSeccompProfileInfo.localhostProfile -}}
-{{- $watcherSeccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.watcher "values" .Values) | fromYaml -}}
-{{- $watcherSeccompProfileType := $watcherSeccompProfileInfo.type -}}
-{{- $watcherLocalhostProfile := $watcherSeccompProfileInfo.localhostProfile -}}
-{{- $mintSeccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.mintTaskScheduler "values" .Values) | fromYaml -}}
-{{- $mintSeccompProfileType := $mintSeccompProfileInfo.type -}}
-{{- $mintLocalhostProfile := $mintSeccompProfileInfo.localhostProfile -}}
-{{- $udcaSeccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.udca "values" .Values) | fromYaml -}}
-{{- $udcaSeccompProfileType := $udcaSeccompProfileInfo.type -}}
-{{- $udcaLocalhostProfile := $udcaSeccompProfileInfo.localhostProfile -}}
-{{- $apigeeIngressGatewaySeccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.apigeeIngressGateway "values" .Values) | fromYaml -}}
-{{- $apigeeIngressGatewaySeccompProfileType := $apigeeIngressGatewaySeccompProfileInfo.type -}}
-{{- $apigeeIngressGatewayLocalhostProfile := $apigeeIngressGatewaySeccompProfileInfo.localhostProfile -}}
 apiVersion: apigee.cloud.google.com/v1alpha2
 kind: ApigeeOrganization
 metadata:
@@ -100,7 +73,6 @@ spec:
   {{- end }}
   udcaEnabled: {{ .Values.orgScopedUDCA }}
   config:
-    disableUDCA: {{ .Values.disableUDCA }}   # The default value for this will be true. Configurable in the off chance that some unique scenario requires it
     mintPubSubEnabled: true
     mintDataflowDisabled: true
     mintPubSubTopicName: "apigee-new-mint"
@@ -116,13 +88,6 @@ spec:
         runAsUser: {{ .Values.apigeeUserID }}
         runAsGroup: {{ .Values.apigeeGroupID }}
         privileged: true
-        {{- if ne $cassandraUserSetupSeccompProfileType "" }}
-        seccompProfile:
-          type: {{ $cassandraUserSetupSeccompProfileType }}
-          {{- if ne $cassandraUserSetupLocalhostProfile "" }}
-          localhostProfile: {{ $cassandraUserSetupLocalhostProfile }}
-          {{- end }}
-        {{- end }}
       {{- with .Values.nodeSelector }}
       {{- include "nodeAffinity.runtime" . | nindent 6}}
       {{- end }}
@@ -150,13 +115,6 @@ spec:
         runAsUser: {{ .Values.apigeeUserID }}
         runAsGroup: {{ .Values.apigeeGroupID }}
         privileged: false
-        {{- if ne $cassandraSchemaSetupSeccompProfileType "" }}
-        seccompProfile:
-          type: {{ $cassandraSchemaSetupSeccompProfileType }}
-          {{- if ne $cassandraSchemaSetupLocalhostProfile "" }}
-          localhostProfile: {{ $cassandraSchemaSetupLocalhostProfile }}
-          {{- end }}
-        {{- end }}
       {{- with .Values.nodeSelector }}
       {{- include "nodeAffinity.runtime" . | nindent 6 }}
       {{- end }}
@@ -179,14 +137,6 @@ spec:
         image: {{ include "container.image" (dict "hub" .Values.hub "o" .Values.mart "n" "apigee-mart-server") }}
         imagePullPolicy: {{ .Values.mart.image.pullPolicy }}
     connectAgent:
-      {{- if ne $connectAgentSeccompProfileType "" }}
-      securityContext:
-        seccompProfile:
-          type: {{ $connectAgentSeccompProfileType }}
-          {{- if ne $connectAgentLocalhostProfile "" }}
-          localhostProfile: {{ $connectAgentLocalhostProfile }}
-          {{- end }}
-      {{- end }}
       {{- if .Values.gcp.workloadIdentity.enabled }}
       podServiceAccountName: {{ $connectAgentName }}-{{ $generatedName }}-sa
       {{- else}}
@@ -262,13 +212,6 @@ spec:
         runAsUser: {{ .Values.apigeeUserID }}
         runAsGroup: {{ .Values.apigeeGroupID }}
         privileged: false
-        {{- if ne $cassandraSchemaValidationSeccompProfileType "" }}
-        seccompProfile:
-          type: {{ $cassandraSchemaValidationSeccompProfileType }}
-          {{- if ne $cassandraSchemaValidationLocalhostProfile "" }}
-          localhostProfile: {{ $cassandraSchemaValidationLocalhostProfile }}
-          {{- end }}
-        {{- end }}
       {{- with .Values.nodeSelector }}
       {{- include "nodeAffinity.runtime" . | nindent 6}}
       {{- end }}
@@ -291,14 +234,6 @@ spec:
         image: {{ include "container.image" (dict "hub" .Values.hub "o" .Values.mart "n" "apigee-mart-server") }}
         imagePullPolicy: {{ .Values.mart.image.pullPolicy }}
     watcher:
-      {{- if ne $watcherSeccompProfileType "" }}
-      securityContext:
-        seccompProfile:
-          type: {{ $watcherSeccompProfileType }}
-          {{- if ne $watcherLocalhostProfile "" }}
-          localhostProfile: {{ $watcherLocalhostProfile }}
-          {{- end }}
-      {{- end }}
       {{- if .Values.gcp.workloadIdentity.enabled }}
       podServiceAccountName: {{ $watcherName }}-{{ $generatedName }}-sa
       {{- else }}
@@ -381,13 +316,6 @@ spec:
         runAsUser: {{ .Values.apigeeUserID }}
         runAsGroup: {{ .Values.apigeeGroupID }}
         privileged: false
-        {{- if ne $martSeccompProfileType "" }}
-        seccompProfile:
-          type: {{ $martSeccompProfileType }}
-          {{- if ne $martLocalhostProfile "" }}
-          localhostProfile: {{ $martLocalhostProfile }}
-          {{- end }}
-        {{- end }}
       {{- if  .Values.gcp.workloadIdentity.enabled }}
       podServiceAccountName: {{ $martName }}-{{ $generatedName }}-sa
       {{- else }}
@@ -502,13 +430,6 @@ spec:
         runAsUser: {{ .Values.apigeeUserID }}
         runAsGroup: {{ .Values.apigeeGroupID }}
         privileged: false
-        {{- if ne $mintSeccompProfileType "" }}
-        seccompProfile:
-          type: {{ $mintSeccompProfileType }}
-          {{- if ne $mintLocalhostProfile "" }}
-          localhostProfile: {{ $mintLocalhostProfile }}
-          {{- end }}
-        {{- end }}
       {{- if .Values.gcp.workloadIdentity.enabled }}
       podServiceAccountName: {{$mintTaskScheduler}}-{{ $generatedName }}-sa
       {{- else }}
@@ -584,13 +505,6 @@ spec:
         runAsUser: {{ .Values.apigeeUserID }}
         runAsGroup: {{ .Values.apigeeGroupID }}
         privileged: false
-        {{- if ne $udcaSeccompProfileType "" }}
-        seccompProfile:
-          type: {{ $udcaSeccompProfileType }}
-          {{- if ne $udcaLocalhostProfile "" }}
-          localhostProfile: {{ $udcaLocalhostProfile }}
-          {{- end }}
-        {{- end }}
       {{- if .Values.gcp.workloadIdentity.enabled }}
       podServiceAccountName: {{ $udcaName }}-{{ $generatedName }}-sa
       {{- else }}
@@ -740,13 +654,6 @@ spec:
         runAsUser: {{ $apigeeUserID }}
         runAsGroup: {{ $apigeeGroupID }}
         privileged: false
-        {{- if ne $apigeeIngressGatewaySeccompProfileType "" }}
-        seccompProfile:
-          type: {{ $apigeeIngressGatewaySeccompProfileType }}
-          {{- if ne $apigeeIngressGatewayLocalhostProfile "" }}
-          localhostProfile: {{ $apigeeIngressGatewayLocalhostProfile }}
-          {{- end }}
-        {{- end }}
       {{- with $nodeSelector }}
       {{- include "nodeAffinity.runtime" . | nindent 6}}
       {{- end }}

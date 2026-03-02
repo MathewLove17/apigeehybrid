@@ -4,12 +4,6 @@
 {{- $name := "default" }}
 {{- $redisName := "apigee-redis" -}}
 {{- $redisEnvoyName := "apigee-redis-envoy" -}}
-{{- $redisSeccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.redis "values" .Values) | fromYaml }}
-{{- $redisSeccompProfileType := $redisSeccompProfileInfo.type }}
-{{- $redisLocalhostProfile := $redisSeccompProfileInfo.localhostProfile }}
-{{- $redisEnvoySeccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.redis.envoy "values" .Values) | fromYaml }}
-{{- $redisEnvoySeccompProfileType := $redisEnvoySeccompProfileInfo.type }}
-{{- $redisEnvoyLocalhostProfile := $redisEnvoySeccompProfileInfo.localhostProfile }}
 apiVersion: apigee.cloud.google.com/v1alpha1
 kind: ApigeeRedis
 metadata:
@@ -39,13 +33,6 @@ spec:
         runAsUser: {{ .Values.apigeeUserID }}
         runAsGroup: {{ .Values.apigeeGroupID }}
         privileged: false
-        {{- if ne $redisSeccompProfileType "" }}
-        seccompProfile:
-          type: {{ $redisSeccompProfileType }}
-          {{- if ne $redisLocalhostProfile "" }}
-          localhostProfile: {{ $redisLocalhostProfile }}
-          {{- end }}
-        {{- end }}
       {{- with .Values.nodeSelector }}
       {{- include "nodeAffinity.runtime" . | nindent 6 }}
       {{- end }}
@@ -148,13 +135,6 @@ spec:
         runAsUser: {{ .Values.apigeeUserID }}
         runAsGroup: {{ .Values.apigeeGroupID }}
         privileged: false
-        {{- if ne $redisEnvoySeccompProfileType "" }}
-        seccompProfile:
-          type: {{ $redisEnvoySeccompProfileType }}
-          {{- if ne $redisEnvoyLocalhostProfile "" }}
-          localhostProfile: {{ $redisEnvoyLocalhostProfile }}
-          {{- end }}
-        {{- end }}
       {{- with .Values.nodeSelector }}
       {{- include "nodeAffinity.runtime" . | nindent 6 }}
       {{- end }}

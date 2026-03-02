@@ -12,21 +12,6 @@
 {{- $wiAnnotation := "apigee.cloud.google.com/wi-config-checksum" -}}
 {{- $saAnnotation := "apigee.cloud.google.com/sa-config-checksum" -}}
 {{- $generatedName := include "orgScopeEncodedName" (dict "name" .Values.org) -}}
-{{- $collectorSeccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.metrics.collector "values" .Values) | fromYaml }}
-{{- $collectorSeccompProfileType := $collectorSeccompProfileInfo.type }}
-{{- $collectorLocalhostProfile := $collectorSeccompProfileInfo.localhostProfile }}
-{{- $proxySeccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.metrics.sdSidecar "values" .Values) | fromYaml }}
-{{- $proxySeccompProfileType := $proxySeccompProfileInfo.type }}
-{{- $proxyLocalhostProfile := $proxySeccompProfileInfo.localhostProfile }}
-{{- $metricsAppSeccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.metrics.prometheus "values" .Values) | fromYaml }}
-{{- $metricsAppSeccompProfileType := $metricsAppSeccompProfileInfo.type }}
-{{- $metricsAppLocalhostProfile := $metricsAppSeccompProfileInfo.localhostProfile }}
-{{- $adapterSeccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.metrics.adapter "values" .Values) | fromYaml }}
-{{- $adapterSeccompProfileType := $adapterSeccompProfileInfo.type }}
-{{- $adapterLocalhostProfile := $adapterSeccompProfileInfo.localhostProfile }}
-{{- $containerLogsSeccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.logger "values" .Values) | fromYaml}}
-{{- $containerLogsSeccompProfileType := $containerLogsSeccompProfileInfo.type }}
-{{- $containerLogsLocalhostProfile := $containerLogsSeccompProfileInfo.localhostProfile }}
 kind: ApigeeTelemetry
 apiVersion: apigee.cloud.google.com/v1alpha2
 metadata:
@@ -80,14 +65,6 @@ spec:
   components:
     {{- if .Values.metrics.enabled }}
     collector:
-      {{- if ne $collectorSeccompProfileType "" }}
-      securityContext:
-        seccompProfile:
-          type: {{ $collectorSeccompProfileType }}
-          {{- if ne $collectorLocalhostProfile "" }}
-          localhostProfile: {{ $collectorLocalhostProfile }}
-          {{- end }}
-      {{- end }}
       {{- if .Values.gcp.workloadIdentity.enabled }}
       podServiceAccountName: {{ include "metricsSAName" . }}
       {{- else }}
@@ -160,14 +137,6 @@ spec:
           readOnly: true
         {{- end }}
     metricsProxy:
-      {{- if ne $proxySeccompProfileType "" }}
-      securityContext:
-        seccompProfile:
-          type: {{ $proxySeccompProfileType }}
-          {{- if ne $proxyLocalhostProfile "" }}
-          localhostProfile: {{ $proxyLocalhostProfile }}
-          {{- end }}
-      {{- end }}
       {{- if .Values.gcp.workloadIdentity.enabled }}
       podServiceAccountName: {{ include "metricsSAName" . }}
       {{- else }}
@@ -239,14 +208,6 @@ spec:
     {{- end -}}
     {{- if or .Values.metrics.enabled .Values.customAutoscaling.enabled }}
     metricsApp:
-      {{- if ne $metricsAppSeccompProfileType "" }}
-      securityContext:
-        seccompProfile:
-          type: {{ $metricsAppSeccompProfileType }}
-          {{- if ne $metricsAppLocalhostProfile "" }}
-          localhostProfile: {{ $metricsAppLocalhostProfile }}
-          {{- end }}
-      {{- end }}
       {{- if .Values.gcp.workloadIdentity.enabled }}
       podServiceAccountName: {{ include "metricsSAName" . }}
       {{- else }}
@@ -323,14 +284,6 @@ spec:
           readOnly: true
         {{- end }}
     metricsAdapter:
-      {{- if ne $adapterSeccompProfileType "" }}
-      securityContext:
-        seccompProfile:
-          type: {{ $adapterSeccompProfileType }}
-          {{- if ne $adapterLocalhostProfile "" }}
-          localhostProfile: {{ $adapterLocalhostProfile }}
-          {{- end }}
-      {{- end }}
       podServiceAccountName: "{{ $metricAdapterSA }}"
       {{- with .Values.nodeSelector }}
       {{- include "nodeAffinity.runtime" . | nindent 6 }}
@@ -390,14 +343,6 @@ spec:
     {{- end -}}
     {{- if .Values.logger.enabled }}
     containerLogs:
-      {{- if ne $containerLogsSeccompProfileType "" }}
-      securityContext:
-        seccompProfile:
-          type: {{ $containerLogsSeccompProfileType }}
-          {{- if ne $containerLogsLocalhostProfile "" }}
-          localhostProfile: {{ $containerLogsLocalhostProfile }}
-          {{- end }}
-      {{- end }}
       {{- if .Values.gcp.workloadIdentity.enabled }}
       podServiceAccountName: {{ include "loggerSAName" . }}
       {{- else }}

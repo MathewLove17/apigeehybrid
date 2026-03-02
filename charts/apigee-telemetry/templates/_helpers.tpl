@@ -226,31 +226,3 @@ apigee-metrics-sa
 {{- end -}}
 {{- end -}}
 
-{{/*
-    @param component - the component block for the seccomp profile.
-    @param values - the whole context for this
-*/}}
-{{- define "getSeccompProfileInfo" -}}
-{{- $profile := "" -}}
-{{- $type := "" -}}
-{{- if and .component .component.securityContext .component.securityContext.seccompProfile .component.securityContext.seccompProfile.type -}}
-  {{- $type = .component.securityContext.seccompProfile.type -}}
-  {{- if .component.securityContext.seccompProfile.localhostProfile -}}
-  {{- $profile = .component.securityContext.seccompProfile.localhostProfile -}}
-  {{- end -}}
-{{- else if and .values.securityContext .values.securityContext.seccompProfile .values.securityContext.seccompProfile.type -}}
-  {{- $type = .values.securityContext.seccompProfile.type -}}
-  {{- if .values.securityContext.seccompProfile.localhostProfile -}}
-  {{- $profile = .values.securityContext.seccompProfile.localhostProfile -}}
-  {{- end -}}
-{{- end -}}
-{{- if and (ne $type "") (ne $type "RuntimeDefault") (ne $type "Unconfined") (ne $type "Localhost") -}}
-  {{- fail "The seccomp profile type value should be empty or among RuntimeDefault, Unconfined, Localhost." -}}
-{{- else if and (ne $type "Localhost") (ne $profile "") -}}
-  {{- fail "The localhostProfile should be empty if the seccomp profile type is not Localhost." -}}
-{{- else if and (eq $type "Localhost") (eq $profile "") -}}
-  {{- fail "The localhostProfile can't be empty if the seccomp profile type is Localhost." -}}
-{{- end -}}
-{{- $result := dict "type" $type "localhostProfile" $profile -}}
-{{- $result | toYaml -}}
-{{- end -}}

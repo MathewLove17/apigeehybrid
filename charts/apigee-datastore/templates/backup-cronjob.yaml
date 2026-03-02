@@ -11,9 +11,6 @@
 {{- if .Values.cassandra.backup.enabled }}
 {{- $clientImg := include "container.image" (dict "hub" .Values.hub "o" .Values.cassandra.backup "n" "apigee-hybrid-cassandra-client") }}
 {{- $provider := default $gcsProvider .Values.cassandra.backup.cloudProvider }}
-{{- $seccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.cassandra "values" .Values) | fromYaml }}
-{{- $seccompProfileType := $seccompProfileInfo.type }}
-{{- $localhostProfile := $seccompProfileInfo.localhostProfile }}
 {{- if not (has $provider $supportedProviders) }}
   {{- fail (printf "Detected an unsupported backup provider %q. Please check the \"cassandra.backup.cloudProvider\" field in your overrides file.  Supported providers: %+q" $provider $supportedProviders) }}
 {{- end }}
@@ -46,13 +43,6 @@ spec:
             runAsUser: {{ .Values.apigeeUserID }}
             runAsGroup: {{ .Values.apigeeGroupID }}
             fsGroup: {{ .Values.apigeeGroupID }}
-            {{- if ne $seccompProfileType "" }}
-            seccompProfile:
-              type: {{ $seccompProfileType }}
-              {{- if ne $localhostProfile "" }}
-              localhostProfile: {{ $localhostProfile }}
-              {{- end }}
-          {{- end }}
           serviceAccountName: {{ $backup }}-sa
           containers:
           - name: {{ $backup }}

@@ -28815,8 +28815,6 @@ spec:
                     type: boolean
                   mintPubSubTopicName:
                     type: string
-                  disableUDCA:
-                    type: boolean
                 type: object
               dataEncryptionRef:
                 type: string

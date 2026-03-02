@@ -8,7 +8,7 @@ k8sCluster:
   name: ""
   region: ""
 gcp:
-  region: ""
+  region: us-central1
   projectID: ""
   projectIDRuntime: ""
   workloadIdentity:
@@ -34,7 +34,7 @@ logger:
   terminationGracePeriodSeconds: 30
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-fluent-bit"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   serviceAccountPath:
   livenessProbe:
@@ -88,7 +88,7 @@ metrics:
   collector:
     image:
       url: "gcr.io/apigee-release/hybrid/apigee-open-telemetry-collector"
-      tag: "1.16.0"
+      tag: "1.15.1"
       pullPolicy: IfNotPresent
     usePromVarSyntaxV2: true
     resources:
@@ -100,8 +100,8 @@ metrics:
         memory: 512Mi
     readinessProbe:
       httpGet:
-        path: /
-        port: 13133
+        path: /health/status
+        port: 9092
       initialDelaySeconds: 30
       periodSeconds: 10
       timeoutSeconds: 5
@@ -109,8 +109,8 @@ metrics:
       failureThreshold: 3
     livenessProbe:
       httpGet:
-        path: /
-        port: 13133
+        path: /health/status
+        port: 9092
       initialDelaySeconds: 30
       periodSeconds: 10
       timeoutSeconds: 5
@@ -127,7 +127,7 @@ metrics:
   adapter:
     image:
       url: "gcr.io/apigee-release/hybrid/apigee-prometheus-adapter"
-      tag: "1.16.0"
+      tag: "1.15.1"
       pullPolicy: IfNotPresent
     serviceAccountPath:
     containerPort: 6443
@@ -157,7 +157,7 @@ metrics:
   prometheus:
     image:
       url: "gcr.io/apigee-release/hybrid/apigee-prom-prometheus"
-      tag: "1.16.0"
+      tag: "1.15.1"
       pullPolicy: IfNotPresent
     args:
       storage_tsdb_retention: 48h
@@ -186,7 +186,7 @@ metrics:
   sdSidecar:
     image:
       url: "gcr.io/apigee-release/hybrid/apigee-stackdriver-prometheus-sidecar"
-      tag: "1.16.0"
+      tag: "1.15.1"
       pullPolicy: IfNotPresent
     containerPort: 9091
     stackdriverApiAddress: "https://monitoring.googleapis.com:443/"
@@ -196,7 +196,7 @@ metrics:
 guardrails:
   image:
     url: "gcr.io/apigee-release/hybrid/apigee-watcher"
-    tag: "1.16.0"
+    tag: "1.15.1"
     pullPolicy: IfNotPresent
   resources:
     requests:

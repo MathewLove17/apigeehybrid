@@ -12050,8 +12050,6 @@ spec:
                     type: boolean
                   tracePubSubTopicName:
                     type: string
-                  disableUDCA:
-                    type: boolean
                 type: object
               dataEncryptionSecretProviderClass:
                 type: string

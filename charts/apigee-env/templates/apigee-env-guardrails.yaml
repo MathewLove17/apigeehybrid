@@ -1,6 +1,5 @@
 {{- $values := .Values -}}
 {{- $release := .Release -}}
-{{- $seccompProfileInfo := include "getGuardrailsSeccompProfileInfo" (dict "values" .Values) | fromYaml }}
 apiVersion: v1
 kind: Pod
 metadata:
@@ -32,15 +31,6 @@ spec:
     runAsNonRoot: true
     runAsUser: {{ .Values.apigeeUserID }}
     runAsGroup: {{ .Values.apigeeGroupID }}
-    {{- $seccompProfileType := $seccompProfileInfo.type }}
-    {{- if ne $seccompProfileType "" }}
-    seccompProfile:
-      type: {{ $seccompProfileType }}
-      {{- $localhostProfile := $seccompProfileInfo.localhostProfile }}
-      {{- if ne $localhostProfile "" }}
-      localhostProfile: {{ $localhostProfile }}
-      {{- end }}
-    {{- end }}
   containers:
     - name: apigee-hybrid-helm-guardrail-container
       image: {{ include "container.image" (dict "hub" .Values.hub "o" .Values.guardrails "n" "apigee-watcher") }}

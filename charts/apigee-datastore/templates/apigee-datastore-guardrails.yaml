@@ -3,10 +3,6 @@
 {{- $newVer := semver (include "hybridVersion" .) }}
 {{- $namespace := include "namespace" . }}
 {{- $checkpoint := .Values.checkpoint }}
-{{- $clientNetworkInterface := include "clientNetworkInterface" . }}
-{{- $networkInterfaces := include "parseNetworkInterfaces" . | fromYaml }}
-{{- $seccompProfileInfo := include "getSeccompProfileInfo" (dict "component" .Values.guardrails "values" .Values) | fromYaml }}
-
 {{- if empty $checkpoint }}
   {{- $ds := (lookup "apigee.cloud.google.com/v1alpha1" "ApigeeDatastore" $namespace $dsName) }}
   {{- if empty $ds }}
@@ -41,9 +37,12 @@ metadata:
   annotations:
     helm.sh/hook: pre-install,pre-upgrade
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
-    {{- if $networkInterfaces.interfaces }}
-    networking.gke.io/default-interface: {{ $networkInterfaces.clientInterfaceName | quote }}
-    networking.gke.io/interfaces: '{{ $networkInterfaces.interfaces | toJson }}'
+    {{- if and .Values.cassandra.secondaryNetworkName .Values.cassandra.primaryNetworkName}}
+    networking.gke.io/default-interface: eth0
+    networking.gke.io/interfaces: '[
+        {"interfaceName": "eth0", "network": "{{ .Values.cassandra.primaryNetworkName }}"},
+        {"interfaceName": "net1", "network": "{{ .Values.cassandra.secondaryNetworkName }}"}
+      ]'
     {{- end }}
     {{- with .Values.cassandra.annotations }}
     {{- toYaml . | nindent 4 }}
@@ -69,15 +68,6 @@ spec:
     runAsNonRoot: true
     runAsUser: {{ .Values.apigeeUserID }}
     runAsGroup: {{ .Values.apigeeGroupID }}
-    {{- $seccompProfileType := $seccompProfileInfo.type }}
-    {{- if ne $seccompProfileType "" }}
-    seccompProfile:
-      type: {{ $seccompProfileType }}
-      {{- $localhostProfile := $seccompProfileInfo.localhostProfile }}
-      {{- if ne $localhostProfile "" }}
-      localhostProfile: {{ $localhostProfile }}
-      {{- end }}
-    {{- end }}
   serviceAccountName: apigee-cassandra-guardrails-sa
   containers:
     - name: apigee-hybrid-helm-guardrail-container
