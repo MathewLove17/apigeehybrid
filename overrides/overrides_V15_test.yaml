@@ -1,0 +1,256 @@
+instanceID: np-test-ntt
+namespace: apigee # Usually "apigee"
+ 
+gcp:
+  projectID: np-test-ntt
+  region: europe-west1
+  # Enable Workload Identity Federation
+  # Additionally, the service account secrets must be replaced with the workload identity secrets
+  # workloadIdentity:
+  #   enabled: false # must be set to false to use Workload Identity Federation
+  # federatedWorkloadIdentity:
+  #   enabled: true
+  #   audience: "AUDIENCE"
+  #   credentialSourceFile: "/var/run/service-account/token"  
+ 
+k8sCluster:
+  name: adpk8s-eks-gamp-deuc1-2
+  region: europe-west1 # Closest Google Cloud region to the AWS EKS cluster.
+ 
+org: np-test-ntt
+ 
+# Enable HTTP forward proxy server.
+# When enabled, all internet communication for the Apigee Connect, Logger, MART, Metrics, Synchronizer, and UDCA components pass through the proxy server
+httpProxy:
+    host: proxy-gamp-hybrid-d2vpp.internet-dev.aps1.aws.aztec.cloud.allianz
+    port: 8080
+    scheme: HTTP
+ 
+# Required for Enhanced per-environment proxy limits: provides ability to deploy more than 50 proxies per environment
+enhanceProxyLimits: true
+ 
+# Required if using data residency with hybrid:
+# contractProvider: https://CONTROL_PLANE_LOCATION-apigee.googleapis.com
+ 
+# Apply Linux Seccomp profile to hybrid components
+securityContext:
+  seccompProfile:
+    type: RuntimeDefault
+ 
+# To remove User Agent requirement because AWS ALB Healthchecks does not send it
+istiod:
+  healthCheckUserAgents: []
+ 
+nodeSelector:
+  requiredForScheduling: true # True for Production like environments
+  apigeeRuntime:
+    key: "karpenter.sh/nodepool"
+    value: "apigee-runtime"
+  apigeeData:
+    key: "karpenter.sh/nodepool"
+    value: "apigee-data"
+ 
+envs:
+- name: dev
+  serviceAccountSecretRefs:
+    synchronizer: apigee-synchronizer-svc-account #Secret Ref with the Service Account
+      # For example: "apigee-synchronizer-svc-account"
+    runtime: apigee-runtime-svc-account #Secret Ref with the Service Account
+      # For example: "apigee-runtime-svc-account"
+    udca: apigee-udca-svc-account
+  components:
+    runtime:
+      replicaCountMin: 2 # Default value: 1
+      #replicaCountMax: 5 # Default value: 4 #Apply to limit HPA    
+      resources:
+        requests:
+          cpu: 1 # Default value: 500m For smoth autoscaling do not exceed two cores (2000 millicores)
+          memory: 3Gi # Default value: 512Mi For Prod at least 1Gi. Do not exceed 2.5Gi (2560Mi) for smooth autoscaling
+        limits:
+          memory: 6Gi # Default value: 6Gi
+    synchronizer:
+      replicaCountMin: 2 # Default value: 1
+      #replicaCountMax: 5 # Default value: 4 #Apply to limit HPA  
+      resources:
+        requests:
+          cpu: 500m # Default value: 100m
+          memory: 1Gi # Default value: 1Gi
+        limits:
+          cpu: 1000m # Default value: 2000m
+          memory: 3Gi # Default value: 5Gi
+ 
+cassandra:
+  tolerations:
+  - key: "apigee.com/component"  # Tolerate the taint in the apigee-data nodePool
+    operator: "Equal"
+    value: "cassandra"
+    effect: "NoSchedule"
+  auth:
+    secret: apigee-cassandra-creds
+  hostNetwork: false
+    # Set to false for single region installations and  for multi-region
+    # installations with connectivity between pods in different clusters,
+    # like GKE.
+    # Set to true for multi-region installations with no communication
+    # between pods in different clusters, for example Google Distributed
+    # Cloud on VMware or bare metal, GKE on AWS, AKS, EKS, and OpenShift.
+    # See Multi-region deployment: Prerequisites
+  replicaCount: 3
+    # Use multiples of 3 for production.
+    # See Configure Cassandra for production for guidelines.
+  storage:
+    # storageclass: your-preferred-ssd-storage #If not using default storage for your cluster
+    storageSize: 50Gi # Default value: 10Gi
+  resources:
+    requests:
+      cpu: 3 # Default value: 500m
+      memory: 7Gi # Default value:  1Gi
+  maxHeapSize: 4096M # Default value: 512M
+  heapNewSize: 600M # Default value: 100M
+    # Minimum storage requirements for a production environment.
+    # See Configure Cassandra for production.
+  # Enable Cassandra backups with CSI Driver
+  backup:
+    enabled: true
+    image:
+      pullPolicy: Always
+    cloudProvider: "CSI"
+    schedule: "0 2 * * *"    
+ 
+ingressGateways:
+- name: external-ingress # maximum 17 characters.
+  replicaCountMin: 2
+  replicaCountMax: 10
+  svcType: ClusterIP # Tipo ClusterIP, para exponerse luego a través de un Ingress (ALB)
+- name: internal-ingress # maximum 17 characters.
+  replicaCountMin: 2
+  replicaCountMax: 10
+  svcType: ClusterIP # Tipo ClusterIP, para exponerse luego a través de un Ingress (ALB)
+ 
+virtualhosts:
+- name: eu-dev-group
+  minTLSProtocolVersion: "1.2" # Optional. TLS 1.1 is disblaed by
+  selector:
+    app: apigee-ingressgateway
+    ingress_name: internal-ingress
+  sslSecret: apis-allianz-cert
+ 
+ 
+mart:
+  serviceAccountRef: apigee-mart-svc-account #Secret Ref with the Service Account
+    # For example: "apigee-mart-svc-account"
+  replicaCountMin: 2 # Default value: 1
+  #replicaCountMax: 5 # Default value: 5 #Apply to limit HPA
+  resources:
+    requests:
+      cpu: 500m # Default value: 500m
+      memory: 1Gi # Default value: 512Mi
+    limits:
+      cpu: 2000m # Default value: 2000m
+      memory: 2Gi # Default value: 5Gi
+ 
+connectAgent:
+  serviceAccountRef: apigee-mart-svc-account
+    # Use the same secret for mart and connectAgent
+    # For example: "apigee-mart-svc-account"
+  replicaCountMin: 2 # Default value: 1
+  #replicaCountMax: 5 # Default value: 5 #Apply to limit HPA  resources:
+  requests:
+    cpu: 250m # Default value: 100m
+    memory: 256Mi # Default value: 30Mi
+  limits:
+    cpu: 500m # Default value: 512m
+    memory: 512Mi # Default value: 512Mi
+ 
+logger:
+  annotations:
+    describe: ""
+  enabled: true
+    # enabled by default
+    # See apigee-logger in Service accounts and roles used by hybrid components.
+  serviceAccountRef: apigee-logger-svc-account
+    # For example: "apigee-logger-svc-account"
+  resources:
+    requests:
+      cpu: 100m # Default value: 100m
+      memory: 200Mi # Default value: 250Mi
+    limits:
+      cpu: 200m # Default value: 200m
+      memory: 200Mi # Default value:
+ 
+metrics:
+  annotations:
+    describe: ""
+  serviceAccountRef: apigee-metrics-svc-account
+    # For example: "apigee-metrics-svc-account"
+  # aggregator:
+  #   resources:
+  #     requests:
+  #       cpu: 500m # Default value: 500m
+  #       memory: 2Gi # Default value: 512Mi
+  #     limits:
+  #       cpu: 1 # Default value: 500m
+  #       memory: 16Gi # Default value: 3Gi
+  # app:
+  #   resources:
+  #     requests:
+  #       cpu: 500m # Default value: 500m
+  #       memory: 2Gi # Default value: 512Mi
+  #     limits:
+  #       cpu: 1 # Default value: 500m
+  #       memory: 16Gi # Default value: 1Gi
+  # proxy:
+  #   resources:
+  #     requests:
+  #       cpu: 500m # Default value: 500m
+  #       memory: 1Gi # Default value: 512Mi
+  #     limits:
+  #       cpu: 1 # Default value: 500m
+  #       memory: 16Gi # Default value: 1Gi
+  # appStackdriverExporter:
+  #   resources:
+  #     requests:
+  #       cpu: 250m # Default value: 128m
+  #       memory: 1Gi # Default value: 512Mi
+  #     limits:
+  #       cpu: 500 # Default value: 500m
+  #       memory: 5Gi # Default value: 1Gi
+  # proxyStackdriverExporter:
+  #   resources:
+  #     requests:
+  #       cpu: 250m # Default value: 128m
+  #       memory: 1Gi # Default value: 512Mi
+  #     limits:
+  #       cpu: 500 # Default value: 500m
+  #       memory: 5Gi # Default value: 1Gi
+ 
+udca:
+  serviceAccountRef: apigee-udca-svc-account #Secret Ref with the Service Account
+ 
+ 
+ 
+watcher:
+  serviceAccountRef: apigee-watcher-svc-account
+  # For example: "apigee-watcher-svc-account"
+  # replicaCountMin: 1 # Default value: 1
+  # replicaCountMax: 1 # Default value: 1
+  # ¡Warning!: Do not exceed a value of 1 for watcher.replicaCountMax.
+  resources:
+    requests:
+      cpu: 500m # Default value: ¿?
+      memory: 2Gi # Default value: ¿?
+    limits:
+      cpu: 2 # Default value: 1000m
+      memory: 8Gi # Default value: 2Gi
+ 
+ 
+# If using message payloads larger than 10MB.
+# See configure large message payload support:
+# runtime:
+#   cwcAppend:
+#     bin_setenv_max_mem: 4096m   # Increase max heap size to 4 gigs
+#   resources:
+#     requests:
+#       memory: 4Gi
+#     limits:
+#       memory: 6G
