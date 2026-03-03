@@ -14,7 +14,7 @@ spec:
     helm:
       valueFiles:
         - ../../overrides/overrides_V15_test.yaml
-      paramaters:
+      parameters:
         - name: env
           value: dev
   destination:
