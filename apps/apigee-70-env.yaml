@@ -15,8 +15,8 @@ spec:
       valueFiles:
         - ../../overrides/overrides_V15_test.yaml
       paramaters:
-        - name: env
-          value: dev
+      - name: env
+        value: dev
   destination:
     server: https://kubernetes.default.svc
     namespace: apigee
