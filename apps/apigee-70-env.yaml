@@ -4,7 +4,7 @@ metadata:
   name: apigee-70-env
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "60"
+    argocd.argoproj.io/sync-wave: "70"
 spec:
   project: default
   source:
@@ -14,6 +14,9 @@ spec:
     helm:
       valueFiles:
         - ../../overrides/overrides_V15_test.yaml
+      paramaters:
+        - name: env
+          value: dev
   destination:
     server: https://kubernetes.default.svc
     namespace: apigee
