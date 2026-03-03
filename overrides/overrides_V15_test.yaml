@@ -22,7 +22,7 @@ org: np-test-ntt
 # Enable HTTP forward proxy server.
 # When enabled, all internet communication for the Apigee Connect, Logger, MART, Metrics, Synchronizer, and UDCA components pass through the proxy server
 httpProxy:
-    host: proxy-gamp-hybrid-d2vpp.internet-dev.aps1.aws.aztec.cloud.allianz
+    host: proxy-gamp-hybrid-d2vpp.internet-dev.ec1.aws.aztec.cloud.allianz
     port: 8080
     scheme: HTTP
  
