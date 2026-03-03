@@ -101,7 +101,7 @@ cassandra:
   storage:
     # storageclass: your-preferred-ssd-storage #If not using default storage for your cluster
     storageSize: 50Gi # Default value: 10Gi
-    storageclass: "gp3-retain"
+    #storageclass: "gp3-retain"
   resources:
     requests:
       cpu: 3 # Default value: 500m
