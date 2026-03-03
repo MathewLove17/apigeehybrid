@@ -112,7 +112,7 @@ cassandra:
     # See Configure Cassandra for production.
   # Enable Cassandra backups with CSI Driver
   backup:
-    enabled: true
+    enabled: false
     image:
       pullPolicy: Always
     cloudProvider: "CSI"
