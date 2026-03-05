@@ -1,28 +1,26 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: apigee-70-env
+  name: apigee-20-datastore-np-test-ntt
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "70"
+    argocd.argoproj.io/sync-wave: '20'
 spec:
   project: default
   source:
     repoURL: https://github.com/MathewLove17/apigeehybrid.git
     targetRevision: main
-    path: charts/apigee-env
+    path: charts/apigee-datastore
     helm:
       valueFiles:
-        - ../../overrides/overrides_V15_test.yaml
-      parameters:
-        - name: env
-          value: dev
+      - ../../overrides/overrides_np-test-ntt_v1.15.1.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: apigee
   syncPolicy:
+    syncOptions:
+    - CreateNamespace=false
+    - ServerSideApply=true
     automated:
       prune: false
       selfHeal: true
-    syncOptions:
-      - CreateNamespace=false

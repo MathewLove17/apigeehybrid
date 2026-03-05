@@ -1,0 +1,51 @@
+org_id: np-test-ntt
+project_id : np-test-ntt
+analytics_region: europe-west1
+environment_groups:
+  eu-dev-group :
+    hostnames:
+      - eu-dev-test.apis.allianz
+    ingressname: internal-ingress
+    sslSecret: apis-allianz-cert
+  eu-int-group :
+    hostnames:
+      - eu-int-test.apis.allianz
+    ingressname: internal-ingress
+    sslSecret: apis-allianz-cert
+  eu-uat-group : 
+    hostnames:
+      - eu-uat-test.apis.allianz.com
+    ingressname: external-ingress
+    sslSecret: apis-allianz-cert-external
+  eu-pep-group : 
+    hostnames:
+      - eu-pep-test.apis.allianz.com
+    ingressname: external-ingress
+    sslSecret: apis-allianz-cert-external
+environments:
+  dev: 
+    displayname: "dev"
+    envgroups: ["eu-dev-group"]
+  int:
+    displayname: "int"
+    envgroups: ["eu-int-group"]
+  uat:
+    displayname: "uat"
+    envgroups: ["eu-uat-group"]
+  pep:
+    displayname: "pep"
+    envgroups: ["eu-pep-group"]
+charts:
+  version: 1.15.1
+  repo: oci://us-docker.pkg.dev/apigee-release/apigee-hybrid-helm-charts
+dataResidency:
+  enabled: false
+  control_plane_location: in
+httpProxy:
+    host: proxy-gamp-hybrid-d2vpp.internet-dev.ec1.aws.aztec.cloud.allianz
+    port: 8080
+    scheme: HTTP
+k8sCluster:
+  name: adpk8s-eks-gamp-deuc1-2
+  region: europe-west1
+  

@@ -1,16 +1,16 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: apigee-10-operator
+  name: apigee-20-datastore
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "10"
+    argocd.argoproj.io/sync-wave: "20"
 spec:
   project: default
   source:
     repoURL: https://github.com/MathewLove17/apigeehybrid.git
     targetRevision: main
-    path: charts/apigee-operator
+    path: charts/apigee-datastore
     helm:
       valueFiles:
         - ../../overrides/overrides_V15_test.yaml
@@ -18,8 +18,8 @@ spec:
     server: https://kubernetes.default.svc
     namespace: apigee
   syncPolicy:
-    automated:
-      prune: false
-      selfHeal: true
+    # automated:
+    #   prune: false
+    #   selfHeal: true
     syncOptions:
       - CreateNamespace=false
