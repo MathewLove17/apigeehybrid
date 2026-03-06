@@ -23,6 +23,9 @@ environment_groups:
     ingressname: external-ingress
     sslSecret: apis-allianz-cert-external
 environments:
+  dev:
+    displayname: "dev"
+    envgroups: ["eu-dev-group"]
   int:
     displayname: "int"
     envgroups: ["eu-int-group"]

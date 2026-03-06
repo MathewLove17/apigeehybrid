@@ -7,7 +7,7 @@ on:
     paths:
       - "orgs/**"
       - "scripts/**"
-      - "overrides/overrides_V15_test.yaml"
+      - "overrides/overrides_template.yaml"
   workflow_dispatch:
 
 permissions:
