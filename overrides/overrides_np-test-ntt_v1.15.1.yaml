@@ -27,6 +27,29 @@ nodeSelector:
     value: apigee-data
 
 envs:
+- name: dev
+  serviceAccountSecretRefs:
+    synchronizer: apigee-synchronizer-svc-account
+    runtime: apigee-runtime-svc-account
+    udca: apigee-udca-svc-account
+  components:
+    runtime:
+      replicaCountMin: 2
+      resources:
+        requests:
+          cpu: 1
+          memory: 3Gi
+        limits:
+          memory: 6Gi
+    synchronizer:
+      replicaCountMin: 2
+      resources:
+        requests:
+          cpu: 500m
+          memory: 1Gi
+        limits:
+          cpu: 1000m
+          memory: 3Gi
 - name: int
   serviceAccountSecretRefs:
     synchronizer: apigee-synchronizer-svc-account
