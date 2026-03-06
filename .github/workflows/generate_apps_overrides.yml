@@ -1,0 +1,54 @@
+name: Generate GitOps manifests
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "orgs/**"
+      - "scripts/**"
+      - "overrides/overrides_V15_test.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml
+
+      - name: Generate overrides
+        run: |
+          python scripts/generate_overrides.py
+
+      - name: Generate applications
+        run: |
+          python scripts/generate_apps.py
+
+      - name: Commit and push if there are changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add apps/ overrides/
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: regenerate apps and overrides"
+          git push
