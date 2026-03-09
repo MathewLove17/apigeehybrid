@@ -129,7 +129,7 @@ def base_app(name: str, wave: str, chart_path: str, automated: bool) -> Dict[str
             "name": name,
             "namespace": ARGO_NAMESPACE,
             "annotations": {"argocd.argoproj.io/sync-wave": str(wave)},
-            "finalizers": "resources-finalizer.argocd.argoproj.io"
+            "finalizers": ["resources-finalizer.argocd.argoproj.io"]
         },
         "spec": {
             "project": "default",
