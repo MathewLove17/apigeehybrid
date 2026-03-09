@@ -1,0 +1,233 @@
+instanceID: np-test-ntt
+namespace: apigee
+gcp:
+  projectID: np-test-ntt
+  region: europe-west1
+k8sCluster:
+  name: adpk8s-eks-gamp-deuc1-2
+  region: europe-west1
+org: np-test-ntt
+httpProxy:
+  host: proxy-gamp-hybrid-d2vpp.internet-dev.ec1.aws.aztec.cloud.allianz
+  port: 8080
+  scheme: HTTP
+enhanceProxyLimits: true
+securityContext:
+  seccompProfile:
+    type: RuntimeDefault
+istiod:
+  healthCheckUserAgents: []
+nodeSelector:
+  requiredForScheduling: true
+  apigeeRuntime:
+    key: karpenter.sh/nodepool
+    value: apigee-runtime
+  apigeeData:
+    key: karpenter.sh/nodepool
+    value: apigee-data
+
+envs:
+- name: dev
+  serviceAccountSecretRefs:
+    synchronizer: apigee-synchronizer-svc-account
+    runtime: apigee-runtime-svc-account
+    udca: apigee-udca-svc-account
+  components:
+    runtime:
+      replicaCountMin: 2
+      resources:
+        requests:
+          cpu: 1
+          memory: 3Gi
+        limits:
+          memory: 6Gi
+    synchronizer:
+      replicaCountMin: 2
+      resources:
+        requests:
+          cpu: 500m
+          memory: 1Gi
+        limits:
+          cpu: 1000m
+          memory: 3Gi
+- name: int
+  serviceAccountSecretRefs:
+    synchronizer: apigee-synchronizer-svc-account
+    runtime: apigee-runtime-svc-account
+    udca: apigee-udca-svc-account
+  components:
+    runtime:
+      replicaCountMin: 2
+      resources:
+        requests:
+          cpu: 1
+          memory: 3Gi
+        limits:
+          memory: 6Gi
+    synchronizer:
+      replicaCountMin: 2
+      resources:
+        requests:
+          cpu: 500m
+          memory: 1Gi
+        limits:
+          cpu: 1000m
+          memory: 3Gi
+- name: uat
+  serviceAccountSecretRefs:
+    synchronizer: apigee-synchronizer-svc-account
+    runtime: apigee-runtime-svc-account
+    udca: apigee-udca-svc-account
+  components:
+    runtime:
+      replicaCountMin: 2
+      resources:
+        requests:
+          cpu: 1
+          memory: 3Gi
+        limits:
+          memory: 6Gi
+    synchronizer:
+      replicaCountMin: 2
+      resources:
+        requests:
+          cpu: 500m
+          memory: 1Gi
+        limits:
+          cpu: 1000m
+          memory: 3Gi
+- name: pep
+  serviceAccountSecretRefs:
+    synchronizer: apigee-synchronizer-svc-account
+    runtime: apigee-runtime-svc-account
+    udca: apigee-udca-svc-account
+  components:
+    runtime:
+      replicaCountMin: 2
+      resources:
+        requests:
+          cpu: 1
+          memory: 3Gi
+        limits:
+          memory: 6Gi
+    synchronizer:
+      replicaCountMin: 2
+      resources:
+        requests:
+          cpu: 500m
+          memory: 1Gi
+        limits:
+          cpu: 1000m
+          memory: 3Gi
+
+cassandra:
+  tolerations:
+  - key: apigee.com/component
+    operator: Equal
+    value: cassandra
+    effect: NoSchedule
+  auth:
+    secret: apigee-cassandra-creds
+  hostNetwork: false
+  replicaCount: 3
+  storage:
+    storageSize: 50Gi
+    storageclass: gp3-retain
+  resources:
+    requests:
+      cpu: 3
+      memory: 7Gi
+  maxHeapSize: 4096M
+  heapNewSize: 600M
+  backup:
+    enabled: false
+    image:
+      pullPolicy: Always
+    cloudProvider: CSI
+    schedule: 0 2 * * *
+
+ingressGateways:
+- name: external-ingress
+  replicaCountMin: 2
+  replicaCountMax: 10
+  svcType: ClusterIP
+- name: internal-ingress
+  replicaCountMin: 2
+  replicaCountMax: 10
+  svcType: ClusterIP
+
+virtualhosts:
+- name: eu-dev-group
+  minTLSProtocolVersion: '1.2'
+  selector:
+    app: apigee-ingressgateway
+    ingress_name: internal-ingress
+  sslSecret: apis-allianz-cert
+- name: eu-int-group
+  minTLSProtocolVersion: '1.2'
+  selector:
+    app: apigee-ingressgateway
+    ingress_name: internal-ingress
+  sslSecret: apis-allianz-cert
+- name: eu-uat-group
+  minTLSProtocolVersion: '1.2'
+  selector:
+    app: apigee-ingressgateway
+    ingress_name: external-ingress
+  sslSecret: apis-allianz-cert
+- name: eu-pep-group
+  minTLSProtocolVersion: '1.2'
+  selector:
+    app: apigee-ingressgateway
+    ingress_name: external-ingress
+  sslSecret: apis-allianz-cert-external
+
+mart:
+  serviceAccountRef: apigee-mart-svc-account
+  replicaCountMin: 2
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+connectAgent:
+  serviceAccountRef: apigee-mart-svc-account
+  replicaCountMin: 2
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+logger:
+  annotations:
+    describe: ''
+  enabled: true
+  serviceAccountRef: apigee-logger-svc-account
+  resources:
+    requests:
+      cpu: 100m
+      memory: 200Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
+metrics:
+  annotations:
+    describe: ''
+  serviceAccountRef: apigee-metrics-svc-account
+udca:
+  serviceAccountRef: apigee-udca-svc-account
+watcher:
+  serviceAccountRef: apigee-watcher-svc-account
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      cpu: 2
+      memory: 8Gi
