@@ -36,7 +36,7 @@ jobs:
 
       - name: Generate applications
         run: |
-          python scripts/generate_aplicationset.py
+          python scripts/generate_apps.py
 
       - name: Commit and push if there are changes
         run: |
