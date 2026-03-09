@@ -1,0 +1,215 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apigee-platform-np-test-ntt
+  namespace: argocd
+spec:
+  generators:
+  - list:
+      elements:
+      - name: apigee-10-operator-np-test-ntt
+        stage: '10'
+        path: charts/apigee-operator
+        namespace: apigee
+        valueFile: ../../overrides/overrides_np-test-ntt_v1.15.1.yaml
+      - name: apigee-20-datastore-np-test-ntt
+        stage: '20'
+        path: charts/apigee-datastore
+        namespace: apigee
+        valueFile: ../../overrides/overrides_np-test-ntt_v1.15.1.yaml
+      - name: apigee-30-telemetry-np-test-ntt
+        stage: '30'
+        path: charts/apigee-telemetry
+        namespace: apigee
+        valueFile: ../../overrides/overrides_np-test-ntt_v1.15.1.yaml
+      - name: apigee-40-redis-np-test-ntt
+        stage: '40'
+        path: charts/apigee-redis
+        namespace: apigee
+        valueFile: ../../overrides/overrides_np-test-ntt_v1.15.1.yaml
+      - name: apigee-50-ingress-manager-np-test-ntt
+        stage: '50'
+        path: charts/apigee-ingress-manager
+        namespace: apigee
+        valueFile: ../../overrides/overrides_np-test-ntt_v1.15.1.yaml
+      - name: apigee-60-org-np-test-ntt
+        stage: '60'
+        path: charts/apigee-org
+        namespace: apigee
+        valueFile: ../../overrides/overrides_np-test-ntt_v1.15.1.yaml
+    template:
+      metadata:
+        name: '{{.name}}'
+        namespace: argocd
+        labels:
+          stage: '{{.stage}}'
+      spec:
+        project: default
+        source:
+          repoURL: https://github.com/MathewLove17/apigeehybrid.git
+          targetRevision: main
+          path: '{{.path}}'
+          helm:
+            valueFiles:
+            - '{{.valueFile}}'
+        destination:
+          server: https://kubernetes.default.svc
+          namespace: '{{.namespace}}'
+        syncPolicy:
+          syncOptions:
+          - CreateNamespace=false
+          - ServerSideApply=true
+  - list:
+      elements:
+      - name: apigee-70-env-np-test-ntt-dev
+        stage: '70'
+        path: charts/apigee-env
+        namespace: apigee
+        valueFile: ../../overrides/overrides_np-test-ntt_v1.15.1.yaml
+        env: dev
+      - name: apigee-70-env-np-test-ntt-int
+        stage: '70'
+        path: charts/apigee-env
+        namespace: apigee
+        valueFile: ../../overrides/overrides_np-test-ntt_v1.15.1.yaml
+        env: int
+      - name: apigee-70-env-np-test-ntt-uat
+        stage: '70'
+        path: charts/apigee-env
+        namespace: apigee
+        valueFile: ../../overrides/overrides_np-test-ntt_v1.15.1.yaml
+        env: uat
+      - name: apigee-70-env-np-test-ntt-pep
+        stage: '70'
+        path: charts/apigee-env
+        namespace: apigee
+        valueFile: ../../overrides/overrides_np-test-ntt_v1.15.1.yaml
+        env: pep
+    template:
+      metadata:
+        name: '{{.name}}'
+        namespace: argocd
+        labels:
+          stage: '{{.stage}}'
+      spec:
+        project: default
+        source:
+          repoURL: https://github.com/MathewLove17/apigeehybrid.git
+          targetRevision: main
+          path: '{{.path}}'
+          helm:
+            valueFiles:
+            - '{{.valueFile}}'
+            parameters:
+            - name: env
+              value: '{{.env}}'
+        destination:
+          server: https://kubernetes.default.svc
+          namespace: '{{.namespace}}'
+        syncPolicy:
+          syncOptions:
+          - CreateNamespace=false
+          - ServerSideApply=true
+  - list:
+      elements:
+      - name: apigee-80-envgroup-np-test-ntt-eu-dev-group
+        stage: '80'
+        path: charts/apigee-virtualhost
+        namespace: apigee
+        valueFile: ../../overrides/overrides_np-test-ntt_v1.15.1.yaml
+        envgroup: eu-dev-group
+      - name: apigee-80-envgroup-np-test-ntt-eu-int-group
+        stage: '80'
+        path: charts/apigee-virtualhost
+        namespace: apigee
+        valueFile: ../../overrides/overrides_np-test-ntt_v1.15.1.yaml
+        envgroup: eu-int-group
+      - name: apigee-80-envgroup-np-test-ntt-eu-uat-group
+        stage: '80'
+        path: charts/apigee-virtualhost
+        namespace: apigee
+        valueFile: ../../overrides/overrides_np-test-ntt_v1.15.1.yaml
+        envgroup: eu-uat-group
+      - name: apigee-80-envgroup-np-test-ntt-eu-pep-group
+        stage: '80'
+        path: charts/apigee-virtualhost
+        namespace: apigee
+        valueFile: ../../overrides/overrides_np-test-ntt_v1.15.1.yaml
+        envgroup: eu-pep-group
+    template:
+      metadata:
+        name: '{{.name}}'
+        namespace: argocd
+        labels:
+          stage: '{{.stage}}'
+      spec:
+        project: default
+        source:
+          repoURL: https://github.com/MathewLove17/apigeehybrid.git
+          targetRevision: main
+          path: '{{.path}}'
+          helm:
+            valueFiles:
+            - '{{.valueFile}}'
+            parameters:
+            - name: envgroup
+              value: '{{.envgroup}}'
+        destination:
+          server: https://kubernetes.default.svc
+          namespace: '{{.namespace}}'
+        syncPolicy:
+          syncOptions:
+          - CreateNamespace=false
+          - ServerSideApply=true
+  strategy:
+    type: RollingSync
+    rollingSync:
+      steps:
+      - matchExpressions:
+        - key: stage
+          operator: In
+          values:
+          - '10'
+        maxUpdate: 1
+      - matchExpressions:
+        - key: stage
+          operator: In
+          values:
+          - '20'
+        maxUpdate: 1
+      - matchExpressions:
+        - key: stage
+          operator: In
+          values:
+          - '30'
+        maxUpdate: 1
+      - matchExpressions:
+        - key: stage
+          operator: In
+          values:
+          - '40'
+        maxUpdate: 1
+      - matchExpressions:
+        - key: stage
+          operator: In
+          values:
+          - '50'
+        maxUpdate: 1
+      - matchExpressions:
+        - key: stage
+          operator: In
+          values:
+          - '60'
+        maxUpdate: 1
+      - matchExpressions:
+        - key: stage
+          operator: In
+          values:
+          - '70'
+        maxUpdate: 100%
+      - matchExpressions:
+        - key: stage
+          operator: In
+          values:
+          - '80'
+        maxUpdate: 100%
