@@ -16,7 +16,7 @@ environment_groups:
     hostnames:
       - eu-uat-test.apis.allianz.com
     ingressname: external-ingress
-    sslSecret: apis-allianz-cert-external
+    sslSecret: apis-allianz-cert
   eu-pep-group : 
     hostnames:
       - eu-pep-test.apis.allianz.com
