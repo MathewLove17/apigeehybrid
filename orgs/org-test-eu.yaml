@@ -24,7 +24,7 @@ environment_groups:
     sslSecret: apis-allianz-cert-external
 environments:
   dev:
-    displayname: "dev"
+    displayname: "devv"
     envgroups: ["eu-dev-group"]
   int:
     displayname: "int"
