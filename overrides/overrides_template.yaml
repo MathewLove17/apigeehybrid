@@ -164,6 +164,8 @@ connectAgent:
     memory: 512Mi # Default value: 512Mi
  
 logger:
+  envVars:
+    NO_PROXY: 'localhost,127.0.0.1,.svc,.cluster.local,kubernetes.default.svc,apis.allianz,.argocd.svc,argocd-server,argocd-repo-server,argocd-dex-server,argocd-redis,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16'
   annotations:
     describe: ""
   enabled: true
@@ -180,6 +182,11 @@ logger:
       memory: 200Mi # Default value:
  
 metrics:
+  collector:
+    envVars:
+      HTTP_PROXY: 'http://proxy-gamp-hybrid-d2vpp.internet-dev.ec1.aws.aztec.cloud.allianz:8080'
+      HTTPS_PROXY: 'http://proxy-gamp-hybrid-d2vpp.internet-dev.ec1.aws.aztec.cloud.allianz:8080'
+      NO_PROXY: 'localhost,127.0.0.1,.svc,.cluster.local,kubernetes.default.svc,apis.allianz,.argocd.svc,argocd-server,argocd-repo-server,argocd-dex-server,argocd-redis,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16'
   annotations:
     describe: ""
   serviceAccountRef: apigee-metrics-svc-account
