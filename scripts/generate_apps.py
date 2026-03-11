@@ -21,7 +21,7 @@ APPS_DIR_REL = Path("apps")
 
 OVERRIDES_DIR = "overrides"
 OVERRIDES_PREFIX = "overrides_"
-AUTOMATED = False
+AUTOMATED = True
 
 # Componentes globales pero generados "por org" para poder usar overrides por org
 # (wave, shortName, chartPath, automated)
