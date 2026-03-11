@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: apigee-70-env-np-test-ntt-pep
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '70'
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/MathewLove17/apigeehybrid.git
+    targetRevision: main
+    path: charts/apigee-env
+    helm:
+      valueFiles:
+      - ../../overrides/overrides_np-test-ntt_v1.15.1.yaml
+      parameters:
+      - name: env
+        value: pep
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: apigee
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=false
+    - ServerSideApply=true
